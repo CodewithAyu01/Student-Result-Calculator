@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, make_response
 from supabase import create_client
 
 # =========================
@@ -14,7 +14,7 @@ if not url or not key:
 supabase = create_client(url, key)
 
 # =========================
-# FLASK APP               ← YOU DELETED THIS SECTION
+# FLASK APP
 # =========================
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "fallback-secret")
@@ -24,97 +24,52 @@ app.secret_key = os.environ.get("SECRET_KEY", "fallback-secret")
 # =========================
 @app.route('/', methods=['GET', 'POST'])
 def login():
-
     error = None
-
     if request.method == 'POST':
-
         username = request.form['username']
         password = request.form['password']
-
-        # CHECK USER FROM SUPABASE
-
-        data = supabase.table("users").select("*").eq(
-            "username",
-            username
-        ).eq(
-            "password",
-            password
-        ).execute()
-
+        data = supabase.table("users").select("*").eq("username", username).eq("password", password).execute()
         if data.data:
-
             session['user'] = username
-
             return redirect('/dashboard')
-
         else:
             error = 'Invalid Username or Password'
-
     return render_template('login.html', error=error)
 
 # =========================
 # SIGNUP PAGE
 # =========================
-
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
-
     if request.method == 'POST':
-
         username = request.form['username']
         password = request.form['password']
-
-        # SAVE USER IN DATABASE
-
-        supabase.table("users").insert({
-            "username": username,
-            "password": password
-        }).execute()
-
+        supabase.table("users").insert({"username": username, "password": password}).execute()
         return redirect('/')
-
     return render_template('signup.html')
 
 # =========================
 # DASHBOARD
 # =========================
-
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
-
     if 'user' not in session:
         return redirect('/')
-
-    # SAVE RESULT
-
     if request.method == 'POST':
-
         subject = request.form['subject']
         obtained = int(request.form['obtained'])
         total = int(request.form['total'])
-
         percentage = (obtained / total) * 100
-
-        # GRADE CALCULATION
-
         if percentage >= 90:
             grade = 'A+'
-
         elif percentage >= 75:
             grade = 'A'
-
         elif percentage >= 60:
             grade = 'B'
-
         elif percentage >= 40:
             grade = 'C'
-
         else:
             grade = 'Fail'
-
-        # SAVE RESULT TO SUPABASE
-
         supabase.table("results").insert({
             "username": session['user'],
             "subject": subject,
@@ -123,57 +78,99 @@ def dashboard():
             "percentage": round(percentage, 2),
             "grade": grade
         }).execute()
+    data = supabase.table("results").select("*").eq("username", session['user']).execute()
+    user_results = data.data
+    return render_template('dashboard.html', username=session['user'], results=user_results)
 
-    # FETCH USER RESULTS
+# =========================
+# PDF EXPORT
+# =========================
+@app.route('/export-pdf')
+def export_pdf():
+    if 'user' not in session:
+        return redirect('/')
 
-    data = supabase.table("results").select("*").eq(
-        "username",
-        session['user']
-    ).execute()
-
+    data = supabase.table("results").select("*").eq("username", session['user']).execute()
     user_results = data.data
 
-    return render_template(
-        'dashboard.html',
-        username=session['user'],
-        results=user_results
-    )
+    rows = ""
+    total_percentage = 0
+
+    for item in user_results:
+        total_percentage += item['percentage']
+        rows += f"""
+        <tr>
+            <td>{item['subject']}</td>
+            <td>{item['obtained']}/{item['total']}</td>
+            <td>{item['percentage']}%</td>
+            <td>{item['grade']}</td>
+        </tr>
+        """
+
+    avg = round(total_percentage / len(user_results), 2) if user_results else 0
+
+    html = f"""
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Arial; padding: 30px; }}
+            h1 {{ color: #6c63ff; }}
+            table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+            th {{ background: #6c63ff; color: white; padding: 10px; }}
+            td {{ padding: 10px; border: 1px solid #ddd; text-align: center; }}
+            tr:nth-child(even) {{ background: #f9f9f9; }}
+            .summary {{ margin-top: 20px; font-size: 1.1rem; }}
+        </style>
+    </head>
+    <body>
+        <h1>Student Result Report</h1>
+        <p><strong>Student:</strong> {session['user']}</p>
+        <p><strong>Total Subjects:</strong> {len(user_results)}</p>
+        <table>
+            <tr>
+                <th>Subject</th>
+                <th>Marks</th>
+                <th>Percentage</th>
+                <th>Grade</th>
+            </tr>
+            {rows}
+        </table>
+        <div class="summary">
+            <p><strong>Average Percentage:</strong> {avg}%</p>
+        </div>
+    </body>
+    </html>
+    """
+
+    from weasyprint import HTML
+    pdf = HTML(string=html).write_pdf()
+
+    response = make_response(pdf)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename={session["user"]}_results.pdf'
+    return response
 
 # =========================
 # CONTACT FORM
 # =========================
-
 @app.route('/contact', methods=['POST'])
 def contact():
-
     name = request.form['name']
     email = request.form['email']
     message = request.form['message']
-
-    # SAVE CONTACT MESSAGE
-
-    supabase.table("contacts").insert({
-        "name": name,
-        "email": email,
-        "message": message
-    }).execute()
-
+    supabase.table("contacts").insert({"name": name, "email": email, "message": message}).execute()
     return redirect('/dashboard')
 
 # =========================
 # LOGOUT
 # =========================
-
 @app.route('/logout')
 def logout():
-
     session.pop('user', None)
-
     return redirect('/')
 
 # =========================
 # RUN APP
 # =========================
-
 if __name__ == '__main__':
     app.run(debug=False)
