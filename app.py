@@ -20,6 +20,12 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "fallback-secret")
 
 # =========================
+# ADMIN CREDENTIALS
+# =========================
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "Ayushi123")
+
+# =========================
 # LOGIN PAGE
 # =========================
 @app.route('/', methods=['GET', 'POST'])
@@ -89,13 +95,10 @@ def dashboard():
 def export_pdf():
     if 'user' not in session:
         return redirect('/')
-
     data = supabase.table("results").select("*").eq("username", session['user']).execute()
     user_results = data.data
-
     rows = ""
     total_percentage = 0
-
     for item in user_results:
         total_percentage += item['percentage']
         rows += f"""
@@ -106,9 +109,7 @@ def export_pdf():
             <td>{item['grade']}</td>
         </tr>
         """
-
     avg = round(total_percentage / len(user_results), 2) if user_results else 0
-
     html = f"""
     <html>
     <head>
@@ -141,10 +142,8 @@ def export_pdf():
     </body>
     </html>
     """
-
     from weasyprint import HTML
     pdf = HTML(string=html).write_pdf()
-
     response = make_response(pdf)
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = f'attachment; filename={session["user"]}_results.pdf'
@@ -167,7 +166,9 @@ def contact():
 @app.route('/logout')
 def logout():
     session.pop('user', None)
+    session.pop('admin', None)
     return redirect('/')
+
 # =========================
 # LEADERBOARD
 # =========================
@@ -175,12 +176,8 @@ def logout():
 def leaderboard():
     if 'user' not in session:
         return redirect('/')
-
-    # FETCH ALL RESULTS
     data = supabase.table("results").select("*").execute()
     all_results = data.data
-
-    # CALCULATE AVERAGE PER USER
     user_stats = {}
     for item in all_results:
         username = item['username']
@@ -189,8 +186,6 @@ def leaderboard():
         user_stats[username]['total'] += item['percentage']
         user_stats[username]['count'] += 1
         user_stats[username]['grades'].append(item['grade'])
-
-    # BUILD LEADERBOARD LIST
     leaderboard = []
     for username, stats in user_stats.items():
         avg = round(stats['total'] / stats['count'], 2)
@@ -200,15 +195,87 @@ def leaderboard():
             'subjects': stats['count'],
             'is_current': username == session['user']
         })
-
-    # SORT BY AVERAGE
     leaderboard.sort(key=lambda x: x['average'], reverse=True)
-
-    # ADD RANK
     for i, entry in enumerate(leaderboard):
         entry['rank'] = i + 1
-
     return render_template('leaderboard.html', leaderboard=leaderboard, username=session['user'])
+
+# =========================
+# ADMIN LOGIN
+# =========================
+@app.route('/admin', methods=['GET', 'POST'])
+def admin_login():
+    error = None
+    if 'admin' in session:
+        return redirect('/admin/dashboard')
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+            session['admin'] = username
+            return redirect('/admin/dashboard')
+        else:
+            error = 'Invalid Admin Credentials'
+    return render_template('admin_login.html', error=error)
+
+# =========================
+# ADMIN DASHBOARD
+# =========================
+@app.route('/admin/dashboard')
+def admin_dashboard():
+    if 'admin' not in session:
+        return redirect('/admin')
+    users = supabase.table("users").select("*").execute().data
+    results = supabase.table("results").select("*").execute().data
+    contacts = supabase.table("contacts").select("*").execute().data
+    total_students = len(users)
+    total_results = len(results)
+    user_stats = {}
+    for item in results:
+        username = item['username']
+        if username not in user_stats:
+            user_stats[username] = {'total': 0, 'count': 0}
+        user_stats[username]['total'] += item['percentage']
+        user_stats[username]['count'] += 1
+    student_summaries = []
+    for username, stats in user_stats.items():
+        avg = round(stats['total'] / stats['count'], 2)
+        student_summaries.append({
+            'username': username,
+            'subjects': stats['count'],
+            'average': avg
+        })
+    student_summaries.sort(key=lambda x: x['average'], reverse=True)
+    return render_template('admin_dashboard.html',
+        users=users,
+        results=results,
+        contacts=contacts,
+        total_students=total_students,
+        total_results=total_results,
+        student_summaries=student_summaries
+    )
+
+# =========================
+# ADMIN DELETE RESULT
+# =========================
+@app.route('/admin/delete-result/<int:result_id>')
+def delete_result(result_id):
+    if 'admin' not in session:
+        return redirect('/admin')
+    supabase.table("results").delete().eq("id", result_id).execute()
+    return redirect('/admin/dashboard')
+
+# =========================
+# ADMIN DELETE USER
+# =========================
+@app.route('/admin/delete-user/<username>')
+def delete_user(username):
+    if 'admin' not in session:
+        return redirect('/admin')
+    supabase.table("users").delete().eq("username", username).execute()
+    supabase.table("results").delete().eq("username", username).execute()
+    return redirect('/admin/dashboard')
+
 # =========================
 # RUN APP
 # =========================
