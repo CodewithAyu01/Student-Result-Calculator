@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Result App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+
+    <h1>Student Result Calculator</h1>
+
+    <form method="POST">
+
+        <div class="input-group">
+            <label>Student Name</label>
+
+            <input
+                type="text"
+                name="name"
+                placeholder="Enter full student name"
+                required
+            >
+        </div>
+
+        <div class="input-group">
+            <label>Marks (Out of 100)</label>
+
+            <input
+                type="number"
+                name="marks"
+                placeholder="Enter marks"
+                min="0"
+                max="100"
+                required
+            >
+        </div>
+
+        <button type="submit">Calculate Result</button>
+
+    </form>
+    <div class="top-bar">
+
+    <h1>Student Result Calculator</h1>
+
+    {% if session.user %}
+        <a href="/dashboard" class="logout-btn">
+            Dashboard
+        </a>
+    {% endif %}
+
+</div>
+
+    {% if result %}
+
+    <div class="result">
+
+        <h2>Result</h2>
+
+        <p><strong>Name:</strong> {{ result.name }}</p>
+        <p><strong>Marks:</strong> {{ result.marks }}</p>
+        <p><strong>Grade:</strong> {{ result.grade }}</p>
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+</body>
+</html>

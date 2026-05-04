@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="dashboard-container">
+
+    <div class="navbar">
+
+        <h2>Welcome, {{ username }}</h2>
+
+        <a href="/logout" class="logout-btn">
+            Logout
+        </a>
+
+    </div>
+
+    <!-- Result Form -->
+
+    <div class="glass-card">
+
+        <h1>Student Result Calculator</h1>
+
+        <form method="POST">
+
+            <div class="input-group">
+                <label>Subject Name</label>
+                <input type="text" name="subject" required>
+            </div>
+
+            <div class="input-group">
+                <label>Obtained Marks</label>
+                <input type="number" name="obtained" required>
+            </div>
+
+            <div class="input-group">
+                <label>Total Marks</label>
+                <input type="number" name="total" required>
+            </div>
+
+            <button type="submit">
+                Save Result
+            </button>
+
+        </form>
+
+    </div>
+
+    <!-- Result Table -->
+
+    <div class="glass-card">
+
+        <h2>Previous Results</h2>
+
+        <table>
+
+            <tr>
+                <th>Subject</th>
+                <th>Marks</th>
+                <th>Percentage</th>
+                <th>Grade</th>
+            </tr>
+
+            {% for item in results %}
+
+            <tr>
+                <td>{{ item.subject }}</td>
+                <td>{{ item.obtained }}/{{ item.total }}</td>
+                <td>{{ item.percentage }}%</td>
+                <td>{{ item.grade }}</td>
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+    <!-- Contact Form -->
+
+    <div class="glass-card">
+
+        <h2>Contact Us</h2>
+
+        <form action="/contact" method="POST">
+
+            <div class="input-group">
+                <label>Name</label>
+                <input type="text" name="name" required>
+            </div>
+
+            <div class="input-group">
+                <label>Email</label>
+                <input type="email" name="email" required>
+            </div>
+
+            <div class="input-group">
+                <label>Message</label>
+                <textarea name="message" rows="5" required></textarea>
+            </div>
+
+            <button type="submit">
+                Send Message
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+</html>
