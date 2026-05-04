@@ -3,5 +3,5 @@ services:
     name: student-portal
     env: python
     pythonVersion: "3.11.9"
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    buildCommand: pip install --break-system-packages -r requirements.txt
+    startCommand: python -m gunicorn app:app
