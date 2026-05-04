@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="dashboard-container">
+
+    <div class="navbar">
+        <h2>🔐 Admin Panel</h2>
+        <a href="/logout" class="logout-btn">Logout</a>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>👥 Total Students</h3>
+            <p>{{ total_students }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>📋 Total Results</h3>
+            <p>{{ total_results }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>✉️ Total Messages</h3>
+            <p>{{ contacts|length }}</p>
+        </div>
+    </div>
+
+    <!-- STUDENT SUMMARIES -->
+    <div class="glass-card">
+        <h2>📊 Student Performance</h2>
+        <table>
+            <tr>
+                <th>Student</th>
+                <th>Subjects</th>
+                <th>Average %</th>
+                <th>Action</th>
+            </tr>
+            {% for s in student_summaries %}
+            <tr>
+                <td>{{ s.username }}</td>
+                <td>{{ s.subjects }}</td>
+                <td>{{ s.average }}%</td>
+                <td>
+                    <a href="/admin/delete-user/{{ s.username }}"
+                       onclick="return confirm('Delete {{ s.username }} and all their results?')"
+                       class="delete-btn">🗑 Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <!-- ALL RESULTS -->
+    <div class="glass-card">
+        <h2>📋 All Results</h2>
+        <table>
+            <tr>
+                <th>Student</th>
+                <th>Subject</th>
+                <th>Marks</th>
+                <th>Percentage</th>
+                <th>Grade</th>
+                <th>Action</th>
+            </tr>
+            {% for r in results %}
+            <tr>
+                <td>{{ r.username }}</td>
+                <td>{{ r.subject }}</td>
+                <td>{{ r.obtained }}/{{ r.total }}</td>
+                <td>{{ r.percentage }}%</td>
+                <td>{{ r.grade }}</td>
+                <td>
+                    <a href="/admin/delete-result/{{ r.id }}"
+                       onclick="return confirm('Delete this result?')"
+                       class="delete-btn">🗑 Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <!-- CONTACT MESSAGES -->
+    <div class="glass-card">
+        <h2>✉️ Contact Messages</h2>
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Message</th>
+            </tr>
+            {% for c in contacts %}
+            <tr>
+                <td>{{ c.name }}</td>
+                <td>{{ c.email }}</td>
+                <td>{{ c.message }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+</div>
+
+</body>
+</html>
