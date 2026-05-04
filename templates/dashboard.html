@@ -3,114 +3,248 @@
 <head>
     <title>Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
 <div class="dashboard-container">
 
     <div class="navbar">
-
         <h2>Welcome, {{ username }}</h2>
-
-        <a href="/logout" class="logout-btn">
-            Logout
-        </a>
-
+        <a href="/logout" class="logout-btn">Logout</a>
     </div>
 
     <!-- Result Form -->
-
     <div class="glass-card">
-
         <h1>Student Result Calculator</h1>
-
         <form method="POST">
-
             <div class="input-group">
                 <label>Subject Name</label>
                 <input type="text" name="subject" required>
             </div>
-
             <div class="input-group">
                 <label>Obtained Marks</label>
                 <input type="number" name="obtained" required>
             </div>
-
             <div class="input-group">
                 <label>Total Marks</label>
                 <input type="number" name="total" required>
             </div>
-
-            <button type="submit">
-                Save Result
-            </button>
-
+            <button type="submit">Save Result</button>
         </form>
-
     </div>
 
-    <!-- Result Table -->
-
+    <!-- CHARTS SECTION -->
+    {% if results %}
     <div class="glass-card">
+        <h2>Performance Overview</h2>
 
+        <div class="charts-grid">
+
+            <!-- Bar Chart -->
+            <div class="chart-box">
+                <h3>Marks per Subject</h3>
+                <canvas id="barChart"></canvas>
+            </div>
+
+            <!-- Pie Chart -->
+            <div class="chart-box">
+                <h3>Grade Distribution</h3>
+                <canvas id="pieChart"></canvas>
+            </div>
+
+        </div>
+
+        <!-- Line Chart -->
+        <div class="chart-box" style="margin-top: 20px;">
+            <h3>Percentage Trend</h3>
+            <canvas id="lineChart"></canvas>
+        </div>
+
+    </div>
+    {% endif %}
+
+    <!-- Result Table with Pagination -->
+    <div class="glass-card">
         <h2>Previous Results</h2>
 
-        <table>
-
+        <table id="resultsTable">
             <tr>
                 <th>Subject</th>
                 <th>Marks</th>
                 <th>Percentage</th>
                 <th>Grade</th>
             </tr>
-
             {% for item in results %}
-
-            <tr>
+            <tr class="result-row">
                 <td>{{ item.subject }}</td>
                 <td>{{ item.obtained }}/{{ item.total }}</td>
                 <td>{{ item.percentage }}%</td>
-                <td>{{ item.grade }}</td>
+                <td>
+                    <span class="grade-badge grade-{{ item.grade | replace('+', 'plus') }}">
+                        {{ item.grade }}
+                    </span>
+                </td>
             </tr>
-
             {% endfor %}
-
         </table>
+
+        <!-- Pagination Controls -->
+        <div class="pagination" id="pagination"></div>
 
     </div>
 
     <!-- Contact Form -->
-
     <div class="glass-card">
-
         <h2>Contact Us</h2>
-
         <form action="/contact" method="POST">
-
             <div class="input-group">
                 <label>Name</label>
                 <input type="text" name="name" required>
             </div>
-
             <div class="input-group">
                 <label>Email</label>
                 <input type="email" name="email" required>
             </div>
-
             <div class="input-group">
                 <label>Message</label>
                 <textarea name="message" rows="5" required></textarea>
             </div>
-
-            <button type="submit">
-                Send Message
-            </button>
-
+            <button type="submit">Send Message</button>
         </form>
-
     </div>
 
 </div>
+
+<script>
+// ========================
+// CHART DATA FROM FLASK
+// ========================
+const results = {{ results | tojson }};
+
+if (results.length > 0) {
+
+    const subjects = results.map(r => r.subject);
+    const percentages = results.map(r => r.percentage);
+    const obtained = results.map(r => r.obtained);
+    const total = results.map(r => r.total);
+
+    const colors = [
+        '#6c63ff', '#ff6584', '#43e97b', '#f7971e',
+        '#2193b0', '#cc2b5e', '#42275a', '#4facfe'
+    ];
+
+    // ========================
+    // BAR CHART
+    // ========================
+    new Chart(document.getElementById('barChart'), {
+        type: 'bar',
+        data: {
+            labels: subjects,
+            datasets: [{
+                label: 'Obtained Marks',
+                data: obtained,
+                backgroundColor: colors,
+                borderRadius: 8,
+            }, {
+                label: 'Total Marks',
+                data: total,
+                backgroundColor: colors.map(c => c + '55'),
+                borderRadius: 8,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'top' } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    // ========================
+    // PIE CHART - GRADE DIST
+    // ========================
+    const gradeCounts = {};
+    results.forEach(r => {
+        gradeCounts[r.grade] = (gradeCounts[r.grade] || 0) + 1;
+    });
+
+    new Chart(document.getElementById('pieChart'), {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(gradeCounts),
+            datasets: [{
+                data: Object.values(gradeCounts),
+                backgroundColor: colors,
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+
+    // ========================
+    // LINE CHART - TREND
+    // ========================
+    new Chart(document.getElementById('lineChart'), {
+        type: 'line',
+        data: {
+            labels: subjects,
+            datasets: [{
+                label: 'Percentage %',
+                data: percentages,
+                borderColor: '#6c63ff',
+                backgroundColor: 'rgba(108, 99, 255, 0.1)',
+                borderWidth: 3,
+                pointBackgroundColor: '#6c63ff',
+                pointRadius: 6,
+                fill: true,
+                tension: 0.4,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'top' } },
+            scales: { y: { beginAtZero: true, max: 100 } }
+        }
+    });
+
+}
+
+// ========================
+// PAGINATION
+// ========================
+const rowsPerPage = 5;
+const rows = document.querySelectorAll('.result-row');
+const totalPages = Math.ceil(rows.length / rowsPerPage);
+let currentPage = 1;
+
+function showPage(page) {
+    rows.forEach((row, i) => {
+        row.style.display = (i >= (page - 1) * rowsPerPage && i < page * rowsPerPage) ? '' : 'none';
+    });
+    document.querySelectorAll('.page-btn').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.page) === page);
+    });
+}
+
+function buildPagination() {
+    const container = document.getElementById('pagination');
+    if (totalPages <= 1) return;
+    for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.className = 'page-btn';
+        btn.dataset.page = i;
+        btn.onclick = () => { currentPage = i; showPage(i); };
+        container.appendChild(btn);
+    }
+    showPage(1);
+}
+
+buildPagination();
+</script>
 
 </body>
 </html>
