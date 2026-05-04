@@ -1,27 +1,27 @@
+import os
 from flask import Flask, render_template, request, redirect, session
 from supabase import create_client
 
 # =========================
 # SUPABASE CONNECTION
 # =========================
+url = os.environ.get("SUPABASE_URL")
+key = os.environ.get("SUPABASE_KEY")
 
-url = "https://qxpygetxyaekogkkqdij.supabase.co"
-
-key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4cHlnZXR4eWFla29na2txZGlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4Njc5NzIsImV4cCI6MjA5MzQ0Mzk3Mn0.E8iYqbEuiZBcYWme_Uq3aR4yjUQo5WZWaJBsoBfnwy8"
+if not url or not key:
+    raise ValueError("SUPABASE_URL and SUPABASE_KEY must be set in environment variables")
 
 supabase = create_client(url, key)
 
 # =========================
-# FLASK APP
+# FLASK APP               ← YOU DELETED THIS SECTION
 # =========================
-
 app = Flask(__name__)
-app.secret_key = 'secret123'
+app.secret_key = os.environ.get("SECRET_KEY", "fallback-secret")
 
 # =========================
 # LOGIN PAGE
 # =========================
-
 @app.route('/', methods=['GET', 'POST'])
 def login():
 
@@ -176,4 +176,4 @@ def logout():
 # =========================
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)
