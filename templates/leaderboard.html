@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Leaderboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="dashboard-container">
+
+    <div class="navbar">
+        <h2>🏆 Leaderboard</h2>
+        <a href="/dashboard" class="logout-btn">Back to Dashboard</a>
+    </div>
+
+    <div class="glass-card">
+        <h2>Top Students</h2>
+
+        <table>
+            <tr>
+                <th>Rank</th>
+                <th>Student</th>
+                <th>Subjects</th>
+                <th>Average %</th>
+                <th>Medal</th>
+            </tr>
+            {% for entry in leaderboard %}
+            <tr class="{{ 'highlight-row' if entry.is_current }}">
+                <td><strong>#{{ entry.rank }}</strong></td>
+                <td>
+                    {{ entry.username }}
+                    {% if entry.is_current %}
+                    <span class="you-badge">You</span>
+                    {% endif %}
+                </td>
+                <td>{{ entry.subjects }}</td>
+                <td>{{ entry.average }}%</td>
+                <td>
+                    {% if entry.rank == 1 %} 🥇
+                    {% elif entry.rank == 2 %} 🥈
+                    {% elif entry.rank == 3 %} 🥉
+                    {% else %} —
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+
+    </div>
+
+</div>
+
+</body>
+</html>

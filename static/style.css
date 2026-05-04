@@ -197,3 +197,31 @@ table tr {
 @media (max-width: 768px) {
     .charts-grid { grid-template-columns: 1fr; }
 }
+.export-btn {
+    padding: 10px 20px;
+    background: #6c63ff;
+    color: white;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+
+.export-btn:hover {
+    background: #5a52d5;
+    transform: translateY(-2px);
+}
+/* LEADERBOARD */
+.highlight-row {
+    background: rgba(108, 99, 255, 0.15) !important;
+    font-weight: bold;
+}
+
+.you-badge {
+    background: #6c63ff;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    margin-left: 8px;
+}

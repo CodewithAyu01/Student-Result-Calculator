@@ -11,7 +11,10 @@
 
     <div class="navbar">
         <h2>Welcome, {{ username }}</h2>
-        <a href="/logout" class="logout-btn">Logout</a>
+        <div style="display:flex; gap:10px;">
+            <a href="/leaderboard" class="logout-btn" style="background:#43e97b;">🏆 Leaderboard</a>
+            <a href="/logout" class="logout-btn">Logout</a>
+        </div>
     </div>
 
     <!-- Result Form -->
@@ -38,35 +41,29 @@
     {% if results %}
     <div class="glass-card">
         <h2>Performance Overview</h2>
-
         <div class="charts-grid">
-
-            <!-- Bar Chart -->
             <div class="chart-box">
                 <h3>Marks per Subject</h3>
                 <canvas id="barChart"></canvas>
             </div>
-
-            <!-- Pie Chart -->
             <div class="chart-box">
                 <h3>Grade Distribution</h3>
                 <canvas id="pieChart"></canvas>
             </div>
-
         </div>
-
-        <!-- Line Chart -->
         <div class="chart-box" style="margin-top: 20px;">
             <h3>Percentage Trend</h3>
             <canvas id="lineChart"></canvas>
         </div>
-
     </div>
     {% endif %}
 
     <!-- Result Table with Pagination -->
     <div class="glass-card">
-        <h2>Previous Results</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h2>Previous Results</h2>
+            <a href="/export-pdf" class="export-btn">⬇ Export PDF</a>
+        </div>
 
         <table id="resultsTable">
             <tr>
@@ -89,9 +86,7 @@
             {% endfor %}
         </table>
 
-        <!-- Pagination Controls -->
         <div class="pagination" id="pagination"></div>
-
     </div>
 
     <!-- Contact Form -->
@@ -117,9 +112,6 @@
 </div>
 
 <script>
-// ========================
-// CHART DATA FROM FLASK
-// ========================
 const results = {{ results | tojson }};
 
 if (results.length > 0) {
@@ -134,9 +126,7 @@ if (results.length > 0) {
         '#2193b0', '#cc2b5e', '#42275a', '#4facfe'
     ];
 
-    // ========================
     // BAR CHART
-    // ========================
     new Chart(document.getElementById('barChart'), {
         type: 'bar',
         data: {
@@ -160,9 +150,7 @@ if (results.length > 0) {
         }
     });
 
-    // ========================
-    // PIE CHART - GRADE DIST
-    // ========================
+    // PIE CHART
     const gradeCounts = {};
     results.forEach(r => {
         gradeCounts[r.grade] = (gradeCounts[r.grade] || 0) + 1;
@@ -184,9 +172,7 @@ if (results.length > 0) {
         }
     });
 
-    // ========================
-    // LINE CHART - TREND
-    // ========================
+    // LINE CHART
     new Chart(document.getElementById('lineChart'), {
         type: 'line',
         data: {
@@ -209,12 +195,9 @@ if (results.length > 0) {
             scales: { y: { beginAtZero: true, max: 100 } }
         }
     });
-
 }
 
-// ========================
 // PAGINATION
-// ========================
 const rowsPerPage = 5;
 const rows = document.querySelectorAll('.result-row');
 const totalPages = Math.ceil(rows.length / rowsPerPage);

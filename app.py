@@ -168,7 +168,47 @@ def contact():
 def logout():
     session.pop('user', None)
     return redirect('/')
+# =========================
+# LEADERBOARD
+# =========================
+@app.route('/leaderboard')
+def leaderboard():
+    if 'user' not in session:
+        return redirect('/')
 
+    # FETCH ALL RESULTS
+    data = supabase.table("results").select("*").execute()
+    all_results = data.data
+
+    # CALCULATE AVERAGE PER USER
+    user_stats = {}
+    for item in all_results:
+        username = item['username']
+        if username not in user_stats:
+            user_stats[username] = {'total': 0, 'count': 0, 'grades': []}
+        user_stats[username]['total'] += item['percentage']
+        user_stats[username]['count'] += 1
+        user_stats[username]['grades'].append(item['grade'])
+
+    # BUILD LEADERBOARD LIST
+    leaderboard = []
+    for username, stats in user_stats.items():
+        avg = round(stats['total'] / stats['count'], 2)
+        leaderboard.append({
+            'username': username,
+            'average': avg,
+            'subjects': stats['count'],
+            'is_current': username == session['user']
+        })
+
+    # SORT BY AVERAGE
+    leaderboard.sort(key=lambda x: x['average'], reverse=True)
+
+    # ADD RANK
+    for i, entry in enumerate(leaderboard):
+        entry['rank'] = i + 1
+
+    return render_template('leaderboard.html', leaderboard=leaderboard, username=session['user'])
 # =========================
 # RUN APP
 # =========================
