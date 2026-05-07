@@ -1,15 +1,35 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Signup</title>
+    <title>Login</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
 <div class="container auth-box">
 
-    <h1>Create Account</h1>
+    <h1>Student Portal Login</h1>
 
+    <!-- 🔵 OAuth LOGIN BUTTONS -->
+    <div style="margin-bottom: 20px;">
+
+        <a href="/login/google">
+            <button type="button" style="width:100%; margin-bottom:10px;">
+                Continue with Google
+            </button>
+        </a>
+
+        <a href="/login/github">
+            <button type="button" style="width:100%; margin-bottom:10px;">
+                Continue with GitHub
+            </button>
+        </a>
+
+    </div>
+
+    <hr>
+
+    <!-- 🔴 MANUAL LOGIN -->
     <form method="POST">
 
         <div class="input-group">
@@ -22,13 +42,17 @@
             <input type="password" name="password" required>
         </div>
 
-        <button type="submit">Signup</button>
+        <button type="submit">Login</button>
 
     </form>
 
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
+
     <p class="bottom-link">
-        Already have an account?
-        <a href="/">Login</a>
+        Don't have an account?
+        <a href="/signup">Signup</a>
     </p>
 
 </div>
