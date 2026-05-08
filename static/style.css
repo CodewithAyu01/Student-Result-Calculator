@@ -225,3 +225,61 @@ table tr {
     font-size: 0.75rem;
     margin-left: 8px;
 }
+ /* =========================
+   AI VOICE ASSISTANT
+========================= */
+
+.voice-btn {
+    background: linear-gradient(135deg, #ff4b2b, #ff416c);
+    color: white;
+    border: none;
+    padding: 14px 22px;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 18px rgba(255, 65, 108, 0.3);
+}
+
+.voice-btn:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 10px 22px rgba(255, 65, 108, 0.45);
+}
+
+.voice-btn:active {
+    transform: scale(0.98);
+}
+
+#status {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.08);
+    font-size: 15px;
+    font-weight: bold;
+    color: white;
+    min-height: 45px;
+    display: flex;
+    align-items: center;
+}
+
+.ai-speaking {
+    animation: pulseGlow 1s infinite;
+}
+
+@keyframes pulseGlow {
+    0% {
+        box-shadow: 0 0 5px rgba(255,255,255,0.2);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(255,255,255,0.5);
+    }
+    100% {
+        box-shadow: 0 0 5px rgba(255,255,255,0.2);
+    }
+}
+.voice-btn {
+    background: linear-gradient(135deg, #232526, #414345);
+}

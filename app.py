@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, session, make_response
+from flask import Flask, render_template, request, redirect, session, make_response, jsonify
 from supabase import create_client
 from dotenv import load_dotenv
 from weasyprint import HTML
@@ -30,7 +30,7 @@ ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "Ayushi123")
 
 # =========================
-# HOME LOGIN (MANUAL)
+# HOME / LOGIN
 # =========================
 @app.route('/', methods=['GET', 'POST'])
 def login():
@@ -60,12 +60,9 @@ def login():
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-
         supabase.table("users").insert({
-            "username": username,
-            "password": password
+            "username": request.form['username'],
+            "password": request.form['password']
         }).execute()
 
         return redirect('/')
@@ -186,28 +183,12 @@ def export_pdf():
 
     html = f"""
     <html>
-    <head>
-        <style>
-            body {{ font-family: Arial; padding: 30px; }}
-            table {{ width: 100%; border-collapse: collapse; }}
-            th {{ background: #6c63ff; color: white; padding: 10px; }}
-            td {{ border: 1px solid #ddd; padding: 10px; text-align: center; }}
-        </style>
-    </head>
     <body>
         <h2>Student Result Report</h2>
-        <p><b>User:</b> {session['user']}</p>
-
-        <table>
-            <tr>
-                <th>Subject</th>
-                <th>Marks</th>
-                <th>Percentage</th>
-                <th>Grade</th>
-            </tr>
+        <p>User: {session['user']}</p>
+        <table border="1">
             {rows}
         </table>
-
         <h3>Average: {avg}%</h3>
     </body>
     </html>
@@ -229,6 +210,69 @@ def logout():
     session.clear()
     return redirect('/')
 
+# =========================
+# AI ASSISTANT API
+# =========================
+@app.route('/assistant', methods=['POST'])
+def assistant():
+    data = request.get_json()
+    text = data.get("text", "").lower()
+
+    if "hello" in text:
+        reply = "Hello! I am your AI study assistant."
+    elif "marks" in text:
+        reply = "Your marks are good. Focus on weak subjects."
+    elif "improve" in text:
+        reply = "Study daily and practice questions."
+    else:
+        reply = "I am learning. Ask me about your results."
+
+    return jsonify({"reply": reply})
+
+# =========================
+# LEADERBOARD  ← FIXED: moved before if __name__ block
+# =========================
+@app.route('/leaderboard')
+def leaderboard():
+    if 'user' not in session:
+        return redirect('/')
+
+    data = supabase.table("results").select("*").execute()
+    all_results = data.data
+
+    user_stats = {}
+
+    for item in all_results:
+        username = item['username']
+
+        if username not in user_stats:
+            user_stats[username] = {'total': 0, 'count': 0}
+
+        user_stats[username]['total'] += item['percentage']
+        user_stats[username]['count'] += 1
+
+    leaderboard_data = []
+
+    for username, stats in user_stats.items():
+        avg = round(stats['total'] / stats['count'], 2)
+        leaderboard_data.append({
+            'username': username,
+            'average': avg,
+            'subjects': stats['count'],
+            'is_current': username == session['user']
+        })
+
+    # Sort by highest average first
+    leaderboard_data.sort(key=lambda x: x['average'], reverse=True)
+
+    # Add ranks
+    for i, entry in enumerate(leaderboard_data):
+        entry['rank'] = i + 1
+
+    return render_template('leaderboard.html', leaderboard=leaderboard_data)
+
+# =========================
+# RUN APP
 # =========================
 if __name__ == '__main__':
     app.run(debug=True)

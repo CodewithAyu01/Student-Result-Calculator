@@ -1,49 +1,198 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leaderboard</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+
+        .leaderboard-title {
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            overflow: hidden;
+            border-radius: 15px;
+        }
+
+        .leaderboard-table th {
+            background: rgba(255,255,255,0.15);
+            padding: 18px;
+            font-size: 16px;
+            letter-spacing: 0.5px;
+        }
+
+        .leaderboard-table td {
+            padding: 18px;
+            text-align: center;
+            transition: 0.3s;
+        }
+
+        .leaderboard-table tr {
+            background: rgba(255,255,255,0.06);
+            transition: all 0.3s ease;
+        }
+
+        .leaderboard-table tr:hover {
+            transform: scale(1.01);
+            background: rgba(255,255,255,0.12);
+        }
+
+        /* TOP 3 */
+
+        .rank-1 {
+            background: rgba(255, 215, 0, 0.15) !important;
+        }
+
+        .rank-2 {
+            background: rgba(192,192,192,0.15) !important;
+        }
+
+        .rank-3 {
+            background: rgba(205,127,50,0.15) !important;
+        }
+
+        /* CURRENT USER */
+
+        .highlight-row {
+            border: 2px solid #6c63ff;
+            box-shadow: 0 0 20px rgba(108,99,255,0.35);
+        }
+
+        .you-badge {
+            background: #6c63ff;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-left: 8px;
+            font-weight: bold;
+        }
+
+        /* MEDAL */
+
+        .medal {
+            font-size: 1.5rem;
+            animation: floatMedal 2s infinite ease-in-out;
+        }
+
+        @keyframes floatMedal {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-4px); }
+            100% { transform: translateY(0px); }
+        }
+
+        /* RESPONSIVE */
+
+        @media (max-width: 768px) {
+
+            .leaderboard-table th,
+            .leaderboard-table td {
+                padding: 12px;
+                font-size: 14px;
+            }
+
+            .leaderboard-title {
+                font-size: 1.5rem;
+            }
+        }
+
+    </style>
 </head>
+
 <body>
 
 <div class="dashboard-container">
 
+    <!-- NAVBAR -->
     <div class="navbar">
         <h2>🏆 Leaderboard</h2>
-        <a href="/dashboard" class="logout-btn">Back to Dashboard</a>
+
+        <a href="/dashboard" class="logout-btn">
+            ⬅ Back
+        </a>
     </div>
 
+    <!-- LEADERBOARD CARD -->
     <div class="glass-card">
-        <h2>Top Students</h2>
 
-        <table>
-            <tr>
-                <th>Rank</th>
-                <th>Student</th>
-                <th>Subjects</th>
-                <th>Average %</th>
-                <th>Medal</th>
-            </tr>
-            {% for entry in leaderboard %}
-            <tr class="{{ 'highlight-row' if entry.is_current }}">
-                <td><strong>#{{ entry.rank }}</strong></td>
-                <td>
-                    {{ entry.username }}
-                    {% if entry.is_current %}
-                    <span class="you-badge">You</span>
-                    {% endif %}
-                </td>
-                <td>{{ entry.subjects }}</td>
-                <td>{{ entry.average }}%</td>
-                <td>
-                    {% if entry.rank == 1 %} 🥇
-                    {% elif entry.rank == 2 %} 🥈
-                    {% elif entry.rank == 3 %} 🥉
-                    {% else %} —
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
+        <div class="leaderboard-title">
+            🌟 Top Students Performance
+        </div>
+
+        <table class="leaderboard-table">
+
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Student</th>
+                    <th>Subjects</th>
+                    <th>Average %</th>
+                    <th>Achievement</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for entry in leaderboard %}
+
+                <tr class="
+                    {% if entry.rank == 1 %} rank-1 {% endif %}
+                    {% if entry.rank == 2 %} rank-2 {% endif %}
+                    {% if entry.rank == 3 %} rank-3 {% endif %}
+                    {% if entry.is_current %} highlight-row {% endif %}
+                ">
+
+                    <td>
+                        <strong>#{{ entry.rank }}</strong>
+                    </td>
+
+                    <td>
+                        {{ entry.username }}
+
+                        {% if entry.is_current %}
+                        <span class="you-badge">You</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {{ entry.subjects }}
+                    </td>
+
+                    <td>
+                        <strong>{{ entry.average }}%</strong>
+                    </td>
+
+                    <td>
+
+                        {% if entry.rank == 1 %}
+                            <span class="medal">🥇</span>
+
+                        {% elif entry.rank == 2 %}
+                            <span class="medal">🥈</span>
+
+                        {% elif entry.rank == 3 %}
+                            <span class="medal">🥉</span>
+
+                        {% else %}
+                            ⭐
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
         </table>
 
     </div>
