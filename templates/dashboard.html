@@ -3,190 +3,539 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
-
+    <title>Student Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <style>
-        .voice-btn {
-            padding: 12px 20px;
-            border: none;
-            background: #6c63ff;
-            color: white;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-top: 15px;
-            transition: background 0.3s;
-        }
-
-        .voice-btn:hover {
-            background: #5146d8;
-        }
-
-        #status {
-            margin-top: 10px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.9);
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-    </style>
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
+<body class="dashboard-page">
+    <div class="dashboard-shell">
+        <nav class="dashboard-nav">
+            <div>
+                <p class="eyebrow">Student Result Portal</p>
+                <h1>Welcome, {{ username }}</h1>
+            </div>
+            <div class="nav-actions">
+                <a href="/leaderboard" class="nav-link">
+                    <i data-lucide="trophy"></i>
+                    Leaderboard
+                </a>
+                <a href="/export-pdf" class="nav-link">
+                    <i data-lucide="file-down"></i>
+                    Export PDF
+                </a>
+                <a href="/logout" class="nav-link danger">
+                    <i data-lucide="log-out"></i>
+                    Logout
+                </a>
+            </div>
+        </nav>
 
-<body>
+        <section class="hero-panel">
+            <div class="hero-copy">
+                <p class="eyebrow">AI Voice Assistant</p>
+                <h2>Your study coach can ask details, read results, and build an improvement plan.</h2>
+                <p>Start the voice interview, answer the questions, then ask about marks, weak subjects, best subjects, or how to increase percentage.</p>
+            </div>
+            <div class="hero-stats">
+                <div>
+                    <span>{{ summary.average }}%</span>
+                    <small>Average</small>
+                </div>
+                <div>
+                    <span>{{ summary.grade }}</span>
+                    <small>Grade</small>
+                </div>
+                <div>
+                    <span>{{ summary.subjects }}</span>
+                    <small>Subjects</small>
+                </div>
+            </div>
+        </section>
 
-<div class="dashboard-container">
+        <section class="assistant-grid">
+            <article class="assistant-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">Voice interview</p>
+                        <h2>AI Student Assistant</h2>
+                    </div>
+                    <div class="voice-orb" id="voiceOrb">
+                        <i data-lucide="mic"></i>
+                    </div>
+                </div>
 
-    <!-- NAVBAR -->
-    <div class="navbar" style="display:flex; justify-content: space-between; align-items: center; padding: 10px;">
-        <h2>Welcome, {{ username }}</h2>
-        <div style="display:flex; gap:10px;">
-            <a href="/leaderboard" class="logout-btn" style="background:#43e97b; text-decoration: none; padding: 10px; border-radius: 5px; color: black;">🏆 Leaderboard</a>
-            <a href="/logout" class="logout-btn" style="text-decoration: none; padding: 10px; border-radius: 5px; background: #ff4b2b; color: white;">Logout</a>
-        </div>
+                <div class="assistant-status" id="status">Ready. Click Start Interview so I can ask student details.</div>
+
+                <div class="assistant-actions">
+                    <button type="button" id="interviewBtn" class="primary-action">
+                        <i data-lucide="audio-lines"></i>
+                        Start Interview
+                    </button>
+                    <button type="button" id="summaryBtn" class="soft-action">
+                        <i data-lucide="sparkles"></i>
+                        Tell Everything
+                    </button>
+                    <button type="button" id="stopBtn" class="soft-action muted">
+                        <i data-lucide="square"></i>
+                        Stop
+                    </button>
+                </div>
+
+                <div class="text-command">
+                    <input id="assistantText" type="text" placeholder="Type a question, e.g. how can I improve percentage?">
+                    <button type="button" id="sendTextBtn" class="icon-action" aria-label="Send question">
+                        <i data-lucide="send"></i>
+                    </button>
+                </div>
+
+                <div class="chat-log" id="chatLog" aria-live="polite"></div>
+            </article>
+
+            <article class="details-panel">
+                <div class="panel-heading compact">
+                    <div>
+                        <p class="eyebrow">Student details</p>
+                        <h2>Profile for assistant</h2>
+                    </div>
+                </div>
+
+                <form class="profile-form" id="profileForm">
+                    <label>
+                        Student name
+                        <input id="profileName" type="text" placeholder="Full name">
+                    </label>
+                    <label>
+                        Class
+                        <input id="profileClass" type="text" placeholder="Example: Class 10">
+                    </label>
+                    <label>
+                        Target percentage
+                        <input id="profileTarget" type="number" min="1" max="100" placeholder="Example: 85">
+                    </label>
+                    <label>
+                        Study hours per day
+                        <input id="profileHours" type="number" min="0" step="0.5" placeholder="Example: 3">
+                    </label>
+                    <label class="full">
+                        Main goal
+                        <input id="profileGoal" type="text" placeholder="Example: score above 85 percent">
+                    </label>
+                    <label class="full">
+                        Exam focus
+                        <input id="profileFocus" type="text" placeholder="Example: board exams, unit test, final exams">
+                    </label>
+                    <button type="submit" class="primary-action full">
+                        <i data-lucide="save"></i>
+                        Save Details
+                    </button>
+                </form>
+
+                <div class="profile-preview" id="profilePreview">
+                    <div><span>Name</span><strong id="previewName">Not added</strong></div>
+                    <div><span>Class</span><strong id="previewClass">Not added</strong></div>
+                    <div><span>Target</span><strong id="previewTarget">Not added</strong></div>
+                    <div><span>Study time</span><strong id="previewHours">Not added</strong></div>
+                </div>
+            </article>
+        </section>
+
+        <section class="metrics-grid">
+            <div class="metric-card">
+                <span>Total marks</span>
+                <strong>{{ summary.total_obtained }}/{{ summary.total_marks }}</strong>
+            </div>
+            <div class="metric-card">
+                <span>Strongest subject</span>
+                <strong>{% if summary.best %}{{ summary.best.subject }}{% else %}No data{% endif %}</strong>
+            </div>
+            <div class="metric-card attention">
+                <span>Needs focus</span>
+                <strong>{% if summary.weakest %}{{ summary.weakest.subject }}{% else %}No data{% endif %}</strong>
+            </div>
+            <div class="metric-card">
+                <span>Next target gap</span>
+                <strong>{{ summary.target_gap }}%</strong>
+            </div>
+        </section>
+
+        <section class="content-grid">
+            <article class="form-panel">
+                <div class="panel-heading compact">
+                    <div>
+                        <p class="eyebrow">Add result</p>
+                        <h2>Save subject marks</h2>
+                    </div>
+                </div>
+                <form method="POST" class="result-form">
+                    <label>
+                        Subject
+                        <input type="text" name="subject" placeholder="Mathematics" required>
+                    </label>
+                    <label>
+                        Obtained marks
+                        <input type="number" name="obtained" placeholder="82" min="0" required>
+                    </label>
+                    <label>
+                        Total marks
+                        <input type="number" name="total" placeholder="100" min="1" required>
+                    </label>
+                    <button type="submit" class="primary-action">
+                        <i data-lucide="plus"></i>
+                        Save Result
+                    </button>
+                </form>
+            </article>
+
+            <article class="chart-panel">
+                <div class="panel-heading compact">
+                    <div>
+                        <p class="eyebrow">Performance</p>
+                        <h2>Subject percentage</h2>
+                    </div>
+                </div>
+                {% if results %}
+                    <div class="chart-wrap">
+                        <canvas id="resultChart"></canvas>
+                    </div>
+                {% else %}
+                    <div class="empty-state">Add your first subject result to see the chart and assistant analysis.</div>
+                {% endif %}
+            </article>
+        </section>
+
+        <section class="table-panel">
+            <div class="panel-heading compact">
+                <div>
+                    <p class="eyebrow">Saved data</p>
+                    <h2>Previous results</h2>
+                </div>
+                <a href="/export-pdf" class="nav-link">
+                    <i data-lucide="file-down"></i>
+                    Export PDF
+                </a>
+            </div>
+
+            <div class="table-wrap">
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>Subject</th>
+                            <th>Marks</th>
+                            <th>Percentage</th>
+                            <th>Grade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in results %}
+                        <tr>
+                            <td>{{ item.subject }}</td>
+                            <td>{{ item.obtained }}/{{ item.total }}</td>
+                            <td>{{ item.percentage }}%</td>
+                            <td><span class="grade-pill grade-{{ item.grade|replace('+', 'plus') }}">{{ item.grade }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4">No results saved yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </div>
 
-    <!-- RESULT FORM -->
-    <div class="glass-card">
-        <h1>Student Result Calculator</h1>
+    <script>
+        const resultsData = {{ results | tojson }};
+        const profileKey = "studentAssistantProfile";
+        const detailQuestions = [
+            { key: "name", prompt: "What is the student's full name?" },
+            { key: "studentClass", prompt: "Which class or grade is the student in?" },
+            { key: "targetPercentage", prompt: "What percentage target should the student aim for?", number: true },
+            { key: "studyHours", prompt: "How many hours can the student study daily?", number: true },
+            { key: "goal", prompt: "What is the student's main academic goal?" },
+            { key: "examFocus", prompt: "Which exam or test is the student preparing for?" }
+        ];
 
-        <form method="POST">
-            <input type="text" name="subject" placeholder="Subject" required><br><br>
-            <input type="number" name="obtained" placeholder="Obtained Marks" required><br><br>
-            <input type="number" name="total" placeholder="Total Marks" required><br><br>
-            <button type="submit">Save Result</button>
-        </form>
+        let recognition = null;
+        let voicesLoaded = [];
+        const statusEl = document.getElementById("status");
+        const chatLog = document.getElementById("chatLog");
+        const voiceOrb = document.getElementById("voiceOrb");
+        const assistantText = document.getElementById("assistantText");
 
-        <!-- 🎙 VOICE ASSISTANT -->
-        <button onclick="startAssistant()" class="voice-btn">
-            🎙 Talk to AI Assistant
-        </button>
+        function loadVoices() {
+            voicesLoaded = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+        }
 
-        <p id="status"></p>
-    </div>
+        if (window.speechSynthesis) {
+            loadVoices();
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+        }
 
-    <!-- TABLE -->
-    <div class="glass-card">
-        <h2>Previous Results</h2>
+        function getProfile() {
+            try {
+                return JSON.parse(localStorage.getItem(profileKey)) || {};
+            } catch (error) {
+                return {};
+            }
+        }
 
-        <table border="1" width="100%" style="border-collapse: collapse;">
-            <thead>
-                <tr style="background: #f4f4f4;">
-                    <th>Subject</th>
-                    <th>Marks</th>
-                    <th>Percentage</th>
-                    <th>Grade</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in results %}
-                <tr>
-                    <td>{{ item.subject }}</td>
-                    <td>{{ item.obtained }}/{{ item.total }}</td>
-                    <td>{{ item.percentage }}%</td>
-                    <td>{{ item.grade }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+        function saveProfile(profile) {
+            localStorage.setItem(profileKey, JSON.stringify(profile));
+            fillProfileForm(profile);
+            updateProfilePreview(profile);
+        }
 
-</div>
+        function fillProfileForm(profile) {
+            document.getElementById("profileName").value = profile.name || "";
+            document.getElementById("profileClass").value = profile.studentClass || "";
+            document.getElementById("profileTarget").value = profile.targetPercentage || "";
+            document.getElementById("profileHours").value = profile.studyHours || "";
+            document.getElementById("profileGoal").value = profile.goal || "";
+            document.getElementById("profileFocus").value = profile.examFocus || "";
+        }
 
-<!-- ===================== VOICE AI SCRIPT ===================== -->
-<script>
-let recognition;
+        function updateProfilePreview(profile) {
+            document.getElementById("previewName").textContent = profile.name || "Not added";
+            document.getElementById("previewClass").textContent = profile.studentClass || "Not added";
+            document.getElementById("previewTarget").textContent = profile.targetPercentage ? profile.targetPercentage + "%" : "Not added";
+            document.getElementById("previewHours").textContent = profile.studyHours ? profile.studyHours + " hours/day" : "Not added";
+        }
 
-// =====================
-// LOAD VOICES PROPERLY
-// =====================
-let voicesLoaded = [];
+        function setStatus(message) {
+            statusEl.textContent = message;
+        }
 
-function loadVoices() {
-    voicesLoaded = window.speechSynthesis.getVoices();
-}
+        function addMessage(who, text) {
+            const line = document.createElement("div");
+            line.className = "chat-message " + who;
+            line.innerHTML = "<span>" + (who === "student" ? "You" : "AI") + "</span><p></p>";
+            line.querySelector("p").textContent = text;
+            chatLog.appendChild(line);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
 
-loadVoices();
-window.speechSynthesis.onvoiceschanged = loadVoices;
+        function speak(text, afterSpeech) {
+            if (!window.speechSynthesis || !text) {
+                if (afterSpeech) afterSpeech();
+                return;
+            }
 
-// =====================
-// SPEAK FUNCTION (FIXED)
-// =====================
-function speak(text) {
-    if (!text) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = "en-IN";
+            utterance.rate = 0.96;
+            utterance.pitch = 1;
 
-    window.speechSynthesis.cancel();
+            if (voicesLoaded.length) {
+                utterance.voice = voicesLoaded.find((voice) => voice.lang.includes("en-IN"))
+                    || voicesLoaded.find((voice) => voice.lang.includes("en"))
+                    || voicesLoaded[0];
+            }
 
-    const msg = new SpeechSynthesisUtterance(text);
-    msg.lang = "en-IN";
-    msg.rate = 1;
-    msg.pitch = 1;
+            utterance.onend = () => {
+                if (afterSpeech) afterSpeech();
+            };
+            utterance.onerror = () => {
+                if (afterSpeech) afterSpeech();
+            };
+            window.speechSynthesis.speak(utterance);
+        }
 
-    // wait until voices are loaded
-    if (voicesLoaded.length > 0) {
-        msg.voice =
-            voicesLoaded.find(v => v.lang.includes("en")) ||
-            voicesLoaded[0];
-    }
+        function getSpeechRecognition() {
+            return window.SpeechRecognition || window.webkitSpeechRecognition;
+        }
 
-    window.speechSynthesis.speak(msg);
-}
+        function beginListening(onText) {
+            const SpeechRecognition = getSpeechRecognition();
+            if (!SpeechRecognition) {
+                setStatus("Voice is not supported in this browser. Type your question or use Google Chrome.");
+                return;
+            }
 
-// =====================
-// START ASSISTANT
-// =====================
-function startAssistant() {
-    const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
+            stopAssistant(false);
+            recognition = new SpeechRecognition();
+            recognition.lang = "en-IN";
+            recognition.interimResults = false;
+            recognition.continuous = false;
+            recognition.maxAlternatives = 1;
 
-    if (!SpeechRecognition) {
-        alert("Speech Recognition not supported in this browser");
-        return;
-    }
+            voiceOrb.classList.add("listening");
+            setStatus("Listening now. Please speak clearly.");
+            recognition.start();
 
-    recognition = new SpeechRecognition();
-    recognition.lang = "en-IN";
-    recognition.interimResults = false;
-    recognition.continuous = false;
+            recognition.onresult = (event) => {
+                const text = event.results[0][0].transcript.trim();
+                voiceOrb.classList.remove("listening");
+                addMessage("student", text);
+                onText(text);
+            };
 
-    const status = document.getElementById("status");
-    status.innerText = "Listening... 🎧";
+            recognition.onerror = (event) => {
+                voiceOrb.classList.remove("listening");
+                const errorText = {
+                    "not-allowed": "Microphone is blocked. Allow microphone permission and reload.",
+                    "no-speech": "No speech was heard. Try again a little closer to the mic.",
+                    "audio-capture": "No microphone was found.",
+                    "network": "Speech service network error. You can still type your question."
+                };
+                setStatus(errorText[event.error] || "Voice error: " + event.error);
+            };
 
-    recognition.start();
+            recognition.onend = () => {
+                voiceOrb.classList.remove("listening");
+            };
+        }
 
-    recognition.onresult = async (event) => {
-        const text = event.results[0][0].transcript;
-        status.innerText = "You said: " + text;
+        function stopAssistant(showMessage = true) {
+            if (recognition) {
+                recognition.stop();
+                recognition = null;
+            }
+            if (window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+            }
+            voiceOrb.classList.remove("listening");
+            if (showMessage) setStatus("Stopped. You can start again anytime.");
+        }
 
-        const res = await fetch("/assistant", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text })
+        function normalizeNumber(text) {
+            const match = String(text).match(/\d+(\.\d+)?/);
+            return match ? match[0] : text;
+        }
+
+        function nextMissingQuestion(profile) {
+            return detailQuestions.findIndex((item) => !profile[item.key]);
+        }
+
+        function askDetailQuestion() {
+            const profile = getProfile();
+            const activeQuestionIndex = nextMissingQuestion(profile);
+
+            if (activeQuestionIndex === -1) {
+                const readyText = "Great. I have all student details. Now I will explain the student data and improvement plan.";
+                addMessage("assistant", readyText);
+                setStatus(readyText);
+                speak(readyText, () => sendAssistantMessage("tell everything about the student and how to increase percentage"));
+                return;
+            }
+
+            const question = detailQuestions[activeQuestionIndex];
+            addMessage("assistant", question.prompt);
+            setStatus(question.prompt);
+            speak(question.prompt, () => beginListening((answer) => {
+                const updatedProfile = getProfile();
+                updatedProfile[question.key] = question.number ? normalizeNumber(answer) : answer;
+                saveProfile(updatedProfile);
+                askDetailQuestion();
+            }));
+        }
+
+        async function sendAssistantMessage(text) {
+            const question = text || "tell everything about the student";
+            setStatus("Thinking about the student data...");
+
+            try {
+                const response = await fetch("/assistant", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        text: question,
+                        details: getProfile()
+                    })
+                });
+                const data = await response.json();
+                addMessage("assistant", data.reply);
+                setStatus(data.reply);
+                speak(data.reply);
+            } catch (error) {
+                const message = "Assistant server error: " + error.message;
+                addMessage("assistant", message);
+                setStatus(message);
+            }
+        }
+
+        document.getElementById("interviewBtn").addEventListener("click", askDetailQuestion);
+        document.getElementById("summaryBtn").addEventListener("click", () => {
+            sendAssistantMessage("tell everything about the student and how to increase percentage");
+        });
+        document.getElementById("stopBtn").addEventListener("click", () => stopAssistant(true));
+        document.getElementById("sendTextBtn").addEventListener("click", () => {
+            const text = assistantText.value.trim();
+            if (!text) return;
+            addMessage("student", text);
+            assistantText.value = "";
+            sendAssistantMessage(text);
+        });
+        assistantText.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                document.getElementById("sendTextBtn").click();
+            }
+        });
+        document.getElementById("profileForm").addEventListener("submit", (event) => {
+            event.preventDefault();
+            saveProfile({
+                name: document.getElementById("profileName").value.trim(),
+                studentClass: document.getElementById("profileClass").value.trim(),
+                targetPercentage: document.getElementById("profileTarget").value.trim(),
+                studyHours: document.getElementById("profileHours").value.trim(),
+                goal: document.getElementById("profileGoal").value.trim(),
+                examFocus: document.getElementById("profileFocus").value.trim()
+            });
+            setStatus("Student details saved. Ask me for the full summary or improvement plan.");
         });
 
-        const data = await res.json();
+        fillProfileForm(getProfile());
+        updateProfilePreview(getProfile());
 
-        status.innerText = "AI: " + data.reply;
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
 
-        // IMPORTANT: delay helps Chrome allow speech
-        setTimeout(() => {
-            speak(data.reply);
-        }, 300);
-    };
-
-    recognition.onerror = (e) => {
-        status.innerText = "Error: " + e.error;
-    };
-}
-</script>
-
+        if (resultsData.length) {
+            const ctx = document.getElementById("resultChart").getContext("2d");
+            new Chart(ctx, {
+                type: "bar",
+                data: {
+                    labels: resultsData.map((item) => item.subject),
+                    datasets: [{
+                        label: "Percentage",
+                        data: resultsData.map((item) => item.percentage),
+                        backgroundColor: ["#2563eb", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316", "#14b8a6"],
+                        borderRadius: 10,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => context.parsed.y + "%"
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: "#475569" }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                color: "#475569",
+                                callback: (value) => value + "%"
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
 </body>
 </html>

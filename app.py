@@ -111,6 +111,143 @@ def oauth_callback():
 # =========================
 # DASHBOARD
 # =========================
+def calculate_grade(percentage):
+    if percentage >= 90:
+        return "A+"
+    if percentage >= 75:
+        return "A"
+    if percentage >= 60:
+        return "B"
+    if percentage >= 40:
+        return "C"
+    return "Fail"
+
+
+def summarize_results(results):
+    if not results:
+        return {
+            "subjects": 0,
+            "average": 0,
+            "grade": "N/A",
+            "total_obtained": 0,
+            "total_marks": 0,
+            "best": None,
+            "weakest": None,
+            "passed": 0,
+            "needs_attention": 0,
+            "target_gap": 75,
+            "next_target": 75,
+            "message": "Add marks for at least one subject to unlock a full performance summary."
+        }
+
+    total_percentage = sum(float(item.get("percentage", 0) or 0) for item in results)
+    total_obtained = sum(int(item.get("obtained", 0) or 0) for item in results)
+    total_marks = sum(int(item.get("total", 0) or 0) for item in results)
+    average = round(total_percentage / len(results), 2)
+    best = max(results, key=lambda item: float(item.get("percentage", 0) or 0))
+    weakest = min(results, key=lambda item: float(item.get("percentage", 0) or 0))
+    passed = sum(1 for item in results if float(item.get("percentage", 0) or 0) >= 40)
+    needs_attention = sum(1 for item in results if float(item.get("percentage", 0) or 0) < 60)
+    next_target = 90 if average >= 75 else 75 if average >= 60 else 60
+
+    return {
+        "subjects": len(results),
+        "average": average,
+        "grade": calculate_grade(average),
+        "total_obtained": total_obtained,
+        "total_marks": total_marks,
+        "best": best,
+        "weakest": weakest,
+        "passed": passed,
+        "needs_attention": needs_attention,
+        "target_gap": max(0, round(next_target - average, 2)),
+        "next_target": next_target,
+        "message": f"Overall average is {average}% with grade {calculate_grade(average)}."
+    }
+
+
+def build_improvement_plan(summary, details):
+    if summary["subjects"] == 0:
+        return (
+            "First add marks for each subject. After that I can compare subjects, find the weak area, "
+            "and create a clear percentage improvement plan."
+        )
+
+    weakest = summary["weakest"]
+    best = summary["best"]
+    target = details.get("targetPercentage") or summary.get("next_target", 75)
+
+    try:
+        target = float(target)
+    except (TypeError, ValueError):
+        target = summary.get("next_target", 75)
+
+    gap = max(0, round(target - summary["average"], 2))
+    hours = details.get("studyHours") or "2"
+
+    if gap == 0:
+        target_line = "You are already at or above the target. Focus on consistency and full-mark practice."
+    else:
+        target_line = f"To reach {target:g}%, improve the average by about {gap} percentage points."
+
+    return (
+        f"{target_line} Start with {weakest['subject']}, because it is the lowest at {weakest['percentage']}%. "
+        f"Keep {best['subject']} strong at {best['percentage']}% by revising it twice a week. "
+        f"Use a daily {hours}-hour plan: 50 percent weak-subject practice, 30 percent revision, "
+        "and 20 percent test questions. After every test, write down mistakes and repeat those topics first."
+    )
+
+
+def build_assistant_reply(text, results, details):
+    summary = summarize_results(results)
+    text = (text or "").lower()
+    name = details.get("name") or session.get("user", "student")
+    student_class = details.get("studentClass") or details.get("class") or "not provided"
+    goal = details.get("goal") or "improve percentage"
+    focus = details.get("examFocus") or "upcoming exams"
+
+    if summary["subjects"] == 0:
+        return (
+            f"I have the details for {name}. Class: {student_class}. Goal: {goal}. "
+            "No subject marks are saved yet, so please add results and I will explain the full performance."
+        )
+
+    best = summary["best"]
+    weakest = summary["weakest"]
+    improvement_plan = build_improvement_plan(summary, details)
+
+    if any(word in text for word in ["improve", "increase", "percentage", "plan", "study"]):
+        return improvement_plan
+
+    if any(word in text for word in ["weak", "low", "worst"]):
+        return (
+            f"The weakest subject is {weakest['subject']} with {weakest['percentage']}%. "
+            f"Give it the first study slot of the day. {improvement_plan}"
+        )
+
+    if any(word in text for word in ["best", "strong", "highest"]):
+        return (
+            f"The strongest subject is {best['subject']} with {best['percentage']}%. "
+            "Protect that score with regular revision while you lift the weaker subject."
+        )
+
+    if any(word in text for word in ["marks", "result", "summary", "details", "about", "student", "everything", "tell"]):
+        return (
+            f"Student summary for {name}. Class: {student_class}. Focus: {focus}. Goal: {goal}. "
+            f"There are {summary['subjects']} subjects saved. Total marks are "
+            f"{summary['total_obtained']} out of {summary['total_marks']}. "
+            f"Average is {summary['average']}% with grade {summary['grade']}. "
+            f"Best subject is {best['subject']} at {best['percentage']}%. "
+            f"Weakest subject is {weakest['subject']} at {weakest['percentage']}%. "
+            f"{improvement_plan}"
+        )
+
+    return (
+        f"Hi {name}. I can tell your full result summary, strongest subject, weakest subject, "
+        "or a plan to increase percentage. Try asking: how can I improve my percentage?"
+    )
+
+
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     if 'user' not in session:
@@ -121,18 +258,11 @@ def dashboard():
         obtained = int(request.form['obtained'])
         total = int(request.form['total'])
 
-        percentage = (obtained / total) * 100
+        if total <= 0:
+            return redirect('/dashboard')
 
-        if percentage >= 90:
-            grade = "A+"
-        elif percentage >= 75:
-            grade = "A"
-        elif percentage >= 60:
-            grade = "B"
-        elif percentage >= 40:
-            grade = "C"
-        else:
-            grade = "Fail"
+        percentage = (obtained / total) * 100
+        grade = calculate_grade(percentage)
 
         supabase.table("results").insert({
             "username": session['user'],
@@ -148,9 +278,12 @@ def dashboard():
         .eq("username", session['user']) \
         .execute()
 
+    summary = summarize_results(data.data)
+
     return render_template("dashboard.html",
                            username=session['user'],
-                           results=data.data)
+                           results=data.data,
+                           summary=summary)
 
 # =========================
 # PDF EXPORT
@@ -215,17 +348,19 @@ def logout():
 # =========================
 @app.route('/assistant', methods=['POST'])
 def assistant():
-    data = request.get_json()
-    text = data.get("text", "").lower()
+    if 'user' not in session:
+        return jsonify({"reply": "Please log in first so I can read the student result data."}), 401
 
-    if "hello" in text:
-        reply = "Hello! I am your AI study assistant."
-    elif "marks" in text:
-        reply = "Your marks are good. Focus on weak subjects."
-    elif "improve" in text:
-        reply = "Study daily and practice questions."
-    else:
-        reply = "I am learning. Ask me about your results."
+    payload = request.get_json(silent=True) or {}
+    text = payload.get("text", "")
+    details = payload.get("details", {}) or {}
+
+    data = supabase.table("results") \
+        .select("*") \
+        .eq("username", session['user']) \
+        .execute()
+
+    reply = build_assistant_reply(text, data.data, details)
 
     return jsonify({"reply": reply})
 
@@ -275,4 +410,4 @@ def leaderboard():
 # RUN APP
 # =========================
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='localhost')
