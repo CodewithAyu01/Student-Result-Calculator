@@ -1,61 +1,140 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Student Account</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-<body>
+<body class="auth-page">
+    <main class="auth-shell">
+        <section class="auth-hero signup-hero">
+            <p class="eyebrow">Start clean</p>
+            <h1>Create a student workspace for marks, trends, and study planning.</h1>
+            <div class="auth-feature-grid" aria-label="Portal highlights">
+                <div><strong>A+</strong><span>Grades</span></div>
+                <div><strong>Chart</strong><span>Progress</span></div>
+                <div><strong>Plan</strong><span>Targets</span></div>
+            </div>
+        </section>
 
-<div class="container auth-box">
+        <section class="auth-card" aria-labelledby="signup-title">
+            <div class="auth-card-header">
+                <div>
+                    <p class="eyebrow">Student access</p>
+                    <h2 id="signup-title">Create Account</h2>
+                </div>
+                <span class="auth-icon"><i data-lucide="user-plus"></i></span>
+            </div>
 
-    <h1>Student Portal Login</h1>
+            <form method="POST" class="smart-form" id="signupForm" novalidate>
+                <label>
+                    Username
+                    <input
+                        type="text"
+                        name="username"
+                        value="{{ username or '' }}"
+                        autocomplete="username"
+                        minlength="3"
+                        maxlength="50"
+                        pattern="[A-Za-z0-9_.@-]{3,50}"
+                        required
+                    >
+                    <small class="field-error">Use 3-50 valid username characters.</small>
+                </label>
 
-    <!-- 🔵 OAuth LOGIN BUTTONS -->
-    <div style="margin-bottom: 20px;">
+                <label>
+                    Password
+                    <span class="password-field">
+                        <input
+                            id="signupPassword"
+                            type="password"
+                            name="password"
+                            autocomplete="new-password"
+                            minlength="6"
+                            required
+                        >
+                        <button type="button" class="mini-icon-btn" data-toggle-password="signupPassword" aria-label="Show password">
+                            <i data-lucide="eye"></i>
+                        </button>
+                    </span>
+                    <small class="field-error">Password must be at least 6 characters.</small>
+                </label>
 
-        <a href="/login/google">
-            <button type="button" style="width:100%; margin-bottom:10px;">
-                Continue with Google
-            </button>
-        </a>
+                <label>
+                    Confirm password
+                    <span class="password-field">
+                        <input
+                            id="confirmPassword"
+                            type="password"
+                            name="confirm_password"
+                            autocomplete="new-password"
+                            minlength="6"
+                            required
+                        >
+                        <button type="button" class="mini-icon-btn" data-toggle-password="confirmPassword" aria-label="Show password">
+                            <i data-lucide="eye"></i>
+                        </button>
+                    </span>
+                    <small class="field-error" id="confirmError">Passwords must match.</small>
+                </label>
 
-        <a href="/login/github">
-            <button type="button" style="width:100%; margin-bottom:10px;">
-                Continue with GitHub
-            </button>
-        </a>
+                {% if error %}
+                    <p class="form-alert">{{ error }}</p>
+                {% endif %}
 
-    </div>
+                <button type="submit" class="primary-action full-width">
+                    <i data-lucide="check-circle"></i>
+                    Create Account
+                </button>
+            </form>
 
-    <hr>
+            <p class="bottom-link">
+                Already registered?
+                <a href="/">Login</a>
+            </p>
+        </section>
+    </main>
 
-    <!-- 🔴 MANUAL LOGIN -->
-    <form method="POST">
+    <script src="{{ url_for('static', filename='motion.js') }}"></script>
+    <script>
+        const signupPassword = document.getElementById("signupPassword");
+        const confirmPassword = document.getElementById("confirmPassword");
 
-        <div class="input-group">
-            <label>Username</label>
-            <input type="text" name="username" required>
-        </div>
+        function validatePasswordMatch() {
+            if (confirmPassword.value && signupPassword.value !== confirmPassword.value) {
+                confirmPassword.setCustomValidity("Passwords must match.");
+            } else {
+                confirmPassword.setCustomValidity("");
+            }
+        }
 
-        <div class="input-group">
-            <label>Password</label>
-            <input type="password" name="password" required>
-        </div>
+        signupPassword.addEventListener("input", validatePasswordMatch);
+        confirmPassword.addEventListener("input", validatePasswordMatch);
 
-        <button type="submit">Login</button>
+        document.querySelectorAll("[data-toggle-password]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const input = document.getElementById(button.dataset.togglePassword);
+                const isHidden = input.type === "password";
+                input.type = isHidden ? "text" : "password";
+                button.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
+                button.innerHTML = isHidden ? '<i data-lucide="eye-off"></i>' : '<i data-lucide="eye"></i>';
+                window.lucide?.createIcons();
+            });
+        });
 
-    </form>
+        document.querySelectorAll(".smart-form").forEach((form) => {
+            form.addEventListener("submit", (event) => {
+                validatePasswordMatch();
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    form.classList.add("was-validated");
+                }
+            });
+        });
 
-    {% if error %}
-        <p class="error">{{ error }}</p>
-    {% endif %}
-
-    <p class="bottom-link">
-        Don't have an account?
-        <a href="/signup">Signup</a>
-    </p>
-
-</div>
-
+        window.lucide?.createIcons();
+    </script>
 </body>
 </html>

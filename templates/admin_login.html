@@ -1,33 +1,105 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-<body>
-
-<div class="auth-box">
-    <div class="container">
-        <h1>🔐 Admin Login</h1>
-        <form method="POST">
-            <div class="input-group">
-                <label>Username</label>
-                <input type="text" name="username" required>
+<body class="auth-page admin-auth-page">
+    <main class="auth-shell">
+        <section class="auth-hero admin-hero">
+            <p class="eyebrow">Admin control</p>
+            <h1>Review students, manage results, and keep records clean.</h1>
+            <div class="auth-feature-grid" aria-label="Admin highlights">
+                <div><strong>Users</strong><span>Student records</span></div>
+                <div><strong>Marks</strong><span>Result audit</span></div>
+                <div><strong>Safe</strong><span>Protected access</span></div>
             </div>
-            <div class="input-group">
-                <label>Password</label>
-                <input type="password" name="password" required>
-            </div>
-            <button type="submit">Login as Admin</button>
-        </form>
-        {% if error %}
-        <p class="error">{{ error }}</p>
-        {% endif %}
-        <div class="bottom-link">
-            <a href="/">Back to Student Login</a>
-        </div>
-    </div>
-</div>
+        </section>
 
+        <section class="auth-card" aria-labelledby="admin-login-title">
+            <div class="auth-card-header">
+                <div>
+                    <p class="eyebrow">Restricted area</p>
+                    <h2 id="admin-login-title">Admin Login</h2>
+                </div>
+                <span class="auth-icon"><i data-lucide="shield-check"></i></span>
+            </div>
+
+            <form method="POST" class="smart-form" novalidate>
+                <label>
+                    Username
+                    <input
+                        type="text"
+                        name="username"
+                        autocomplete="username"
+                        minlength="3"
+                        maxlength="50"
+                        required
+                    >
+                    <small class="field-error">Admin username is required.</small>
+                </label>
+
+                <label>
+                    Password
+                    <span class="password-field">
+                        <input
+                            id="adminPassword"
+                            type="password"
+                            name="password"
+                            autocomplete="current-password"
+                            minlength="6"
+                            required
+                        >
+                        <button type="button" class="mini-icon-btn" data-toggle-password="adminPassword" aria-label="Show password">
+                            <i data-lucide="eye"></i>
+                        </button>
+                    </span>
+                    <small class="field-error">Password must be at least 6 characters.</small>
+                </label>
+
+                {% if error %}
+                    <p class="form-alert">{{ error }}</p>
+                {% endif %}
+
+                <button type="submit" class="primary-action full-width">
+                    <i data-lucide="lock-keyhole"></i>
+                    Login as Admin
+                </button>
+            </form>
+
+            <p class="bottom-link">
+                Student area
+                <a href="/">Back to login</a>
+            </p>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='motion.js') }}"></script>
+    <script>
+        document.querySelectorAll("[data-toggle-password]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const input = document.getElementById(button.dataset.togglePassword);
+                const isHidden = input.type === "password";
+                input.type = isHidden ? "text" : "password";
+                button.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
+                button.innerHTML = isHidden ? '<i data-lucide="eye-off"></i>' : '<i data-lucide="eye"></i>';
+                window.lucide?.createIcons();
+            });
+        });
+
+        document.querySelectorAll(".smart-form").forEach((form) => {
+            form.addEventListener("submit", (event) => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    form.classList.add("was-validated");
+                }
+            });
+        });
+
+        window.lucide?.createIcons();
+    </script>
 </body>
 </html>

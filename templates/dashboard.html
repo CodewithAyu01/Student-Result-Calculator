@@ -39,7 +39,7 @@
             </div>
             <div class="hero-stats">
                 <div>
-                    <span>{{ summary.average }}%</span>
+                    <span data-count="{{ summary.average }}" data-suffix="%">{{ summary.average }}%</span>
                     <small>Average</small>
                 </div>
                 <div>
@@ -47,7 +47,7 @@
                     <small>Grade</small>
                 </div>
                 <div>
-                    <span>{{ summary.subjects }}</span>
+                    <span data-count="{{ summary.subjects }}">{{ summary.subjects }}</span>
                     <small>Subjects</small>
                 </div>
             </div>
@@ -103,27 +103,27 @@
                 <form class="profile-form" id="profileForm">
                     <label>
                         Student name
-                        <input id="profileName" type="text" placeholder="Full name">
+                        <input id="profileName" type="text" placeholder="Full name" maxlength="60">
                     </label>
                     <label>
                         Class
-                        <input id="profileClass" type="text" placeholder="Example: Class 10">
+                        <input id="profileClass" type="text" placeholder="Example: Class 10" maxlength="30">
                     </label>
                     <label>
                         Target percentage
-                        <input id="profileTarget" type="number" min="1" max="100" placeholder="Example: 85">
+                        <input id="profileTarget" type="number" min="1" max="100" step="1" inputmode="numeric" placeholder="Example: 85">
                     </label>
                     <label>
                         Study hours per day
-                        <input id="profileHours" type="number" min="0" step="0.5" placeholder="Example: 3">
+                        <input id="profileHours" type="number" min="0" max="24" step="0.5" inputmode="decimal" placeholder="Example: 3">
                     </label>
                     <label class="full">
                         Main goal
-                        <input id="profileGoal" type="text" placeholder="Example: score above 85 percent">
+                        <input id="profileGoal" type="text" placeholder="Example: score above 85 percent" maxlength="120">
                     </label>
                     <label class="full">
                         Exam focus
-                        <input id="profileFocus" type="text" placeholder="Example: board exams, unit test, final exams">
+                        <input id="profileFocus" type="text" placeholder="Example: board exams, unit test, final exams" maxlength="120">
                     </label>
                     <button type="submit" class="primary-action full">
                         <i data-lucide="save"></i>
@@ -144,18 +144,24 @@
             <div class="metric-card">
                 <span>Total marks</span>
                 <strong>{{ summary.total_obtained }}/{{ summary.total_marks }}</strong>
+                <div class="progress-track">
+                    <span style="width: {{ summary.average }}%;"></span>
+                </div>
             </div>
             <div class="metric-card">
                 <span>Strongest subject</span>
                 <strong>{% if summary.best %}{{ summary.best.subject }}{% else %}No data{% endif %}</strong>
+                <small>{% if summary.best %}{{ summary.best.percentage }}%{% else %}Add a result{% endif %}</small>
             </div>
             <div class="metric-card attention">
                 <span>Needs focus</span>
                 <strong>{% if summary.weakest %}{{ summary.weakest.subject }}{% else %}No data{% endif %}</strong>
+                <small>{% if summary.weakest %}{{ summary.weakest.percentage }}%{% else %}Add a result{% endif %}</small>
             </div>
             <div class="metric-card">
                 <span>Next target gap</span>
                 <strong>{{ summary.target_gap }}%</strong>
+                <small>Target {{ summary.next_target }}%</small>
             </div>
         </section>
 
@@ -167,19 +173,29 @@
                         <h2>Save subject marks</h2>
                     </div>
                 </div>
-                <form method="POST" class="result-form">
+                <form method="POST" class="result-form smart-form" id="resultForm" novalidate>
                     <label>
                         Subject
-                        <input type="text" name="subject" placeholder="Mathematics" required>
+                        <input id="subjectInput" type="text" name="subject" placeholder="Mathematics" minlength="2" maxlength="50" required>
+                        <small class="field-error">Enter a subject name between 2 and 50 characters.</small>
                     </label>
                     <label>
                         Obtained marks
-                        <input type="number" name="obtained" placeholder="82" min="0" required>
+                        <input id="obtainedInput" type="number" name="obtained" placeholder="82" min="0" step="1" inputmode="numeric" required>
+                        <small class="field-error">Marks must be zero or above.</small>
                     </label>
                     <label>
                         Total marks
-                        <input type="number" name="total" placeholder="100" min="1" required>
+                        <input id="totalInput" type="number" name="total" placeholder="100" min="1" step="1" inputmode="numeric" required>
+                        <small class="field-error">Total marks must be greater than zero.</small>
                     </label>
+                    <div class="result-preview" aria-live="polite">
+                        <span>Preview</span>
+                        <strong id="resultPreview">0%</strong>
+                    </div>
+                    {% if form_error %}
+                        <p class="form-alert full">{{ form_error }}</p>
+                    {% endif %}
                     <button type="submit" class="primary-action">
                         <i data-lucide="plus"></i>
                         Save Result
@@ -224,6 +240,7 @@
                             <th>Marks</th>
                             <th>Percentage</th>
                             <th>Grade</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -233,10 +250,21 @@
                             <td>{{ item.obtained }}/{{ item.total }}</td>
                             <td>{{ item.percentage }}%</td>
                             <td><span class="grade-pill grade-{{ item.grade|replace('+', 'plus') }}">{{ item.grade }}</span></td>
+                            <td>
+                                {% if item.id %}
+                                <form method="POST" action="/delete-result/{{ item.id }}" class="inline-form">
+                                    <button type="submit" class="icon-action danger" aria-label="Delete {{ item.subject }}">
+                                        <i data-lucide="trash-2"></i>
+                                    </button>
+                                </form>
+                                {% else %}
+                                    <span class="muted-text">Locked</span>
+                                {% endif %}
+                            </td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="4">No results saved yet.</td>
+                            <td colspan="5">No results saved yet.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -245,6 +273,7 @@
         </section>
     </div>
 
+    <script src="{{ url_for('static', filename='motion.js') }}"></script>
     <script>
         const resultsData = {{ results | tojson }};
         const profileKey = "studentAssistantProfile";
@@ -263,6 +292,11 @@
         const chatLog = document.getElementById("chatLog");
         const voiceOrb = document.getElementById("voiceOrb");
         const assistantText = document.getElementById("assistantText");
+        const resultForm = document.getElementById("resultForm");
+        const subjectInput = document.getElementById("subjectInput");
+        const obtainedInput = document.getElementById("obtainedInput");
+        const totalInput = document.getElementById("totalInput");
+        const resultPreview = document.getElementById("resultPreview");
 
         function loadVoices() {
             voicesLoaded = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
@@ -301,6 +335,28 @@
             document.getElementById("previewClass").textContent = profile.studentClass || "Not added";
             document.getElementById("previewTarget").textContent = profile.targetPercentage ? profile.targetPercentage + "%" : "Not added";
             document.getElementById("previewHours").textContent = profile.studyHours ? profile.studyHours + " hours/day" : "Not added";
+        }
+
+        function updateResultValidation() {
+            const obtained = Number(obtainedInput.value);
+            const total = Number(totalInput.value);
+            obtainedInput.setCustomValidity("");
+            totalInput.setCustomValidity("");
+
+            if (obtainedInput.value && totalInput.value) {
+                if (total <= 0) {
+                    totalInput.setCustomValidity("Total marks must be greater than zero.");
+                } else if (obtained > total) {
+                    obtainedInput.setCustomValidity("Obtained marks cannot be greater than total marks.");
+                }
+
+                if (total > 0 && obtained >= 0 && obtained <= total) {
+                    resultPreview.textContent = ((obtained / total) * 100).toFixed(2).replace(".00", "") + "%";
+                    return;
+                }
+            }
+
+            resultPreview.textContent = "0%";
         }
 
         function setStatus(message) {
@@ -474,8 +530,46 @@
                 document.getElementById("sendTextBtn").click();
             }
         });
+
+        [obtainedInput, totalInput].forEach((input) => {
+            input.addEventListener("input", updateResultValidation);
+        });
+
+        subjectInput.addEventListener("input", () => {
+            subjectInput.setCustomValidity(subjectInput.value.trim().length ? "" : "Subject name is required.");
+        });
+
+        resultForm.addEventListener("submit", (event) => {
+            subjectInput.value = subjectInput.value.trim();
+            updateResultValidation();
+            if (!resultForm.checkValidity()) {
+                event.preventDefault();
+                resultForm.classList.add("was-validated");
+            }
+        });
+
         document.getElementById("profileForm").addEventListener("submit", (event) => {
             event.preventDefault();
+            const target = document.getElementById("profileTarget");
+            const hours = document.getElementById("profileHours");
+
+            target.setCustomValidity("");
+            hours.setCustomValidity("");
+
+            if (target.value && (Number(target.value) < 1 || Number(target.value) > 100)) {
+                target.setCustomValidity("Target must be between 1 and 100.");
+            }
+
+            if (hours.value && (Number(hours.value) < 0 || Number(hours.value) > 24)) {
+                hours.setCustomValidity("Study hours must be between 0 and 24.");
+            }
+
+            if (!event.currentTarget.checkValidity()) {
+                event.currentTarget.classList.add("was-validated");
+                setStatus("Please correct the highlighted student details.");
+                return;
+            }
+
             saveProfile({
                 name: document.getElementById("profileName").value.trim(),
                 studentClass: document.getElementById("profileClass").value.trim(),
@@ -489,6 +583,7 @@
 
         fillProfileForm(getProfile());
         updateProfilePreview(getProfile());
+        updateResultValidation();
 
         if (window.lucide) {
             window.lucide.createIcons();

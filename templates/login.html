@@ -1,41 +1,107 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal Login</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-<body>
+<body class="auth-page">
+    <main class="auth-shell">
+        <section class="auth-hero">
+            <p class="eyebrow">Student Result Portal</p>
+            <h1>Track marks, understand progress, and plan the next score.</h1>
+            <div class="auth-feature-grid" aria-label="Portal highlights">
+                <div><strong>AI</strong><span>Study coach</span></div>
+                <div><strong>PDF</strong><span>Report export</span></div>
+                <div><strong>100%</strong><span>Responsive</span></div>
+            </div>
+        </section>
 
-<div class="container auth-box">
+        <section class="auth-card" aria-labelledby="login-title">
+            <div class="auth-card-header">
+                <div>
+                    <p class="eyebrow">Welcome back</p>
+                    <h2 id="login-title">Login</h2>
+                </div>
+                <span class="auth-icon"><i data-lucide="graduation-cap"></i></span>
+            </div>
 
-    <h1>Student Portal Login</h1>
+            <form method="POST" class="smart-form" novalidate>
+                <label>
+                    Username
+                    <input
+                        type="text"
+                        name="username"
+                        value="{{ username or '' }}"
+                        autocomplete="username"
+                        minlength="3"
+                        maxlength="50"
+                        pattern="[A-Za-z0-9_.@-]{3,50}"
+                        required
+                    >
+                    <small class="field-error">Use 3-50 valid username characters.</small>
+                </label>
 
-    <form method="POST">
+                <label>
+                    Password
+                    <span class="password-field">
+                        <input
+                            id="loginPassword"
+                            type="password"
+                            name="password"
+                            autocomplete="current-password"
+                            minlength="6"
+                            required
+                        >
+                        <button type="button" class="mini-icon-btn" data-toggle-password="loginPassword" aria-label="Show password">
+                            <i data-lucide="eye"></i>
+                        </button>
+                    </span>
+                    <small class="field-error">Password must be at least 6 characters.</small>
+                </label>
 
-        <div class="input-group">
-            <label>Username</label>
-            <input type="text" name="username" required>
-        </div>
+                {% if error %}
+                    <p class="form-alert">{{ error }}</p>
+                {% endif %}
 
-        <div class="input-group">
-            <label>Password</label>
-            <input type="password" name="password" required>
-        </div>
+                <button type="submit" class="primary-action full-width">
+                    <i data-lucide="log-in"></i>
+                    Login
+                </button>
+            </form>
 
-        <button type="submit">Login</button>
+            <p class="bottom-link">
+                New student?
+                <a href="/signup">Create account</a>
+            </p>
+        </section>
+    </main>
 
-    </form>
+    <script src="{{ url_for('static', filename='motion.js') }}"></script>
+    <script>
+        document.querySelectorAll("[data-toggle-password]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const input = document.getElementById(button.dataset.togglePassword);
+                const isHidden = input.type === "password";
+                input.type = isHidden ? "text" : "password";
+                button.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
+                button.innerHTML = isHidden ? '<i data-lucide="eye-off"></i>' : '<i data-lucide="eye"></i>';
+                window.lucide?.createIcons();
+            });
+        });
 
-    {% if error %}
-        <p class="error">{{ error }}</p>
-    {% endif %}
+        document.querySelectorAll(".smart-form").forEach((form) => {
+            form.addEventListener("submit", (event) => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    form.classList.add("was-validated");
+                }
+            });
+        });
 
-    <p class="bottom-link">
-        Don't have an account?
-        <a href="/signup">Signup</a>
-    </p>
-
-</div>
-
+        window.lucide?.createIcons();
+    </script>
 </body>
 </html>

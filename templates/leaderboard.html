@@ -4,200 +4,97 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leaderboard</title>
-
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
-    <style>
-
-        .leaderboard-title {
-            text-align: center;
-            margin-bottom: 25px;
-            font-size: 2rem;
-            font-weight: bold;
-        }
-
-        .leaderboard-table {
-            width: 100%;
-            border-collapse: collapse;
-            overflow: hidden;
-            border-radius: 15px;
-        }
-
-        .leaderboard-table th {
-            background: rgba(255,255,255,0.15);
-            padding: 18px;
-            font-size: 16px;
-            letter-spacing: 0.5px;
-        }
-
-        .leaderboard-table td {
-            padding: 18px;
-            text-align: center;
-            transition: 0.3s;
-        }
-
-        .leaderboard-table tr {
-            background: rgba(255,255,255,0.06);
-            transition: all 0.3s ease;
-        }
-
-        .leaderboard-table tr:hover {
-            transform: scale(1.01);
-            background: rgba(255,255,255,0.12);
-        }
-
-        /* TOP 3 */
-
-        .rank-1 {
-            background: rgba(255, 215, 0, 0.15) !important;
-        }
-
-        .rank-2 {
-            background: rgba(192,192,192,0.15) !important;
-        }
-
-        .rank-3 {
-            background: rgba(205,127,50,0.15) !important;
-        }
-
-        /* CURRENT USER */
-
-        .highlight-row {
-            border: 2px solid #6c63ff;
-            box-shadow: 0 0 20px rgba(108,99,255,0.35);
-        }
-
-        .you-badge {
-            background: #6c63ff;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            margin-left: 8px;
-            font-weight: bold;
-        }
-
-        /* MEDAL */
-
-        .medal {
-            font-size: 1.5rem;
-            animation: floatMedal 2s infinite ease-in-out;
-        }
-
-        @keyframes floatMedal {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-4px); }
-            100% { transform: translateY(0px); }
-        }
-
-        /* RESPONSIVE */
-
-        @media (max-width: 768px) {
-
-            .leaderboard-table th,
-            .leaderboard-table td {
-                padding: 12px;
-                font-size: 14px;
-            }
-
-            .leaderboard-title {
-                font-size: 1.5rem;
-            }
-        }
-
-    </style>
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
+<body class="dashboard-page">
+    <main class="dashboard-shell">
+        <nav class="dashboard-nav">
+            <div>
+                <p class="eyebrow">Class performance</p>
+                <h1>Leaderboard</h1>
+            </div>
+            <div class="nav-actions">
+                <a href="/dashboard" class="nav-link">
+                    <i data-lucide="arrow-left"></i>
+                    Dashboard
+                </a>
+                <a href="/logout" class="nav-link danger">
+                    <i data-lucide="log-out"></i>
+                    Logout
+                </a>
+            </div>
+        </nav>
 
-<body>
-
-<div class="dashboard-container">
-
-    <!-- NAVBAR -->
-    <div class="navbar">
-        <h2>🏆 Leaderboard</h2>
-
-        <a href="/dashboard" class="logout-btn">
-            ⬅ Back
-        </a>
-    </div>
-
-    <!-- LEADERBOARD CARD -->
-    <div class="glass-card">
-
-        <div class="leaderboard-title">
-            🌟 Top Students Performance
-        </div>
-
-        <table class="leaderboard-table">
-
-            <thead>
-                <tr>
-                    <th>Rank</th>
-                    <th>Student</th>
-                    <th>Subjects</th>
-                    <th>Average %</th>
-                    <th>Achievement</th>
-                </tr>
-            </thead>
-
-            <tbody>
-
-                {% for entry in leaderboard %}
-
-                <tr class="
-                    {% if entry.rank == 1 %} rank-1 {% endif %}
-                    {% if entry.rank == 2 %} rank-2 {% endif %}
-                    {% if entry.rank == 3 %} rank-3 {% endif %}
-                    {% if entry.is_current %} highlight-row {% endif %}
-                ">
-
-                    <td>
-                        <strong>#{{ entry.rank }}</strong>
-                    </td>
-
-                    <td>
-                        {{ entry.username }}
-
-                        {% if entry.is_current %}
-                        <span class="you-badge">You</span>
-                        {% endif %}
-                    </td>
-
-                    <td>
-                        {{ entry.subjects }}
-                    </td>
-
-                    <td>
-                        <strong>{{ entry.average }}%</strong>
-                    </td>
-
-                    <td>
-
-                        {% if entry.rank == 1 %}
-                            <span class="medal">🥇</span>
-
-                        {% elif entry.rank == 2 %}
-                            <span class="medal">🥈</span>
-
-                        {% elif entry.rank == 3 %}
-                            <span class="medal">🥉</span>
-
-                        {% else %}
-                            ⭐
-                        {% endif %}
-
-                    </td>
-
-                </tr>
-
+        <section class="leaderboard-hero">
+            <div>
+                <p class="eyebrow">Top averages</p>
+                <h2>Students ranked by saved subject percentage.</h2>
+            </div>
+            <div class="leaderboard-podium" aria-label="Top three students">
+                {% for entry in leaderboard[:3] %}
+                    <div class="podium-card rank-card-{{ entry.rank }}">
+                        <span>#{{ entry.rank }}</span>
+                        <strong>{{ entry.username }}</strong>
+                        <small data-count="{{ entry.average }}" data-suffix="%">{{ entry.average }}%</small>
+                    </div>
+                {% else %}
+                    <div class="empty-state small">No saved results yet.</div>
                 {% endfor %}
+            </div>
+        </section>
 
-            </tbody>
+        <section class="table-panel animated-panel">
+            <div class="panel-heading compact">
+                <div>
+                    <p class="eyebrow">Ranking table</p>
+                    <h2>All students</h2>
+                </div>
+            </div>
 
-        </table>
+            <div class="table-wrap">
+                <table class="results-table leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Student</th>
+                            <th>Subjects</th>
+                            <th>Average</th>
+                            <th>Progress</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in leaderboard %}
+                        <tr class="{% if entry.is_current %}highlight-row{% endif %}">
+                            <td><strong>#{{ entry.rank }}</strong></td>
+                            <td>
+                                {{ entry.username }}
+                                {% if entry.is_current %}
+                                    <span class="you-badge">You</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ entry.subjects }}</td>
+                            <td><strong>{{ entry.average }}%</strong></td>
+                            <td>
+                                <div class="progress-track" aria-label="{{ entry.average }} percent average">
+                                    <span style="width: {{ entry.average }}%;"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5">No leaderboard data yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
 
-    </div>
-
-</div>
-
+    <script src="{{ url_for('static', filename='motion.js') }}"></script>
+    <script>
+        window.lucide?.createIcons();
+    </script>
 </body>
 </html>

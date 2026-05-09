@@ -1,4 +1,5 @@
 import os
+import re
 from flask import Flask, render_template, request, redirect, session, make_response, jsonify
 from supabase import create_client
 from dotenv import load_dotenv
@@ -29,16 +30,53 @@ app.secret_key = os.getenv("SECRET_KEY", "fallback-secret")
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "Ayushi123")
 
+
+def is_admin_logged_in():
+    return session.get("admin") is True
+
+
+def fetch_table_rows(table_name):
+    try:
+        return supabase.table(table_name).select("*").execute().data or []
+    except Exception:
+        return []
+
 # =========================
 # HOME / LOGIN
 # =========================
+USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9_.@-]{3,50}$")
+
+
+def validate_username(username):
+    username = (username or "").strip()
+    if not username:
+        return username, "Username is required."
+    if not USERNAME_PATTERN.match(username):
+        return username, "Use 3-50 letters, numbers, dots, underscores, @, or hyphens."
+    return username, None
+
+
+def validate_password(password):
+    password = password or ""
+    if not password:
+        return "Password is required."
+    if len(password) < 6:
+        return "Password must be at least 6 characters."
+    return None
+
+
 @app.route('/', methods=['GET', 'POST'])
 def login():
     error = None
 
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username, username_error = validate_username(request.form.get('username'))
+        password = request.form.get('password', '')
+        password_error = validate_password(password)
+
+        if username_error or password_error:
+            error = username_error or password_error
+            return render_template("login.html", error=error, username=username)
 
         data = supabase.table("users") \
             .select("*") \
@@ -54,20 +92,124 @@ def login():
 
     return render_template("login.html", error=error)
 
+
+@app.route('/admin', methods=['GET', 'POST'])
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if is_admin_logged_in():
+        return redirect('/admin/dashboard')
+
+    error = None
+
+    if request.method == 'POST':
+        username = (request.form.get('username') or '').strip()
+        password = request.form.get('password') or ''
+
+        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+            session['admin'] = True
+            return redirect('/admin/dashboard')
+
+        error = "Invalid admin username or password."
+
+    return render_template("admin_login.html", error=error)
+
+
+@app.route('/admin/dashboard')
+def admin_dashboard():
+    if not is_admin_logged_in():
+        return redirect('/admin/login')
+
+    users = fetch_table_rows("users")
+    results = fetch_table_rows("results")
+    contacts = fetch_table_rows("contacts")
+
+    user_stats = {}
+    for item in results:
+        username = item.get("username", "Unknown")
+        if username not in user_stats:
+            user_stats[username] = {"username": username, "total": 0, "subjects": 0}
+
+        user_stats[username]["total"] += float(item.get("percentage", 0) or 0)
+        user_stats[username]["subjects"] += 1
+
+    student_summaries = []
+    for stats in user_stats.values():
+        average = round(stats["total"] / stats["subjects"], 2) if stats["subjects"] else 0
+        student_summaries.append({
+            "username": stats["username"],
+            "subjects": stats["subjects"],
+            "average": average,
+            "grade": calculate_grade(average)
+        })
+
+    student_summaries.sort(key=lambda item: item["average"], reverse=True)
+
+    return render_template(
+        "admin_dashboard.html",
+        total_students=len(users),
+        total_results=len(results),
+        contacts=contacts,
+        results=results,
+        student_summaries=student_summaries
+    )
+
+
+@app.route('/admin/delete-result/<result_id>', methods=['POST'])
+def admin_delete_result(result_id):
+    if not is_admin_logged_in():
+        return redirect('/admin/login')
+
+    supabase.table("results").delete().eq("id", result_id).execute()
+    return redirect('/admin/dashboard')
+
+
+@app.route('/admin/delete-user/<username>', methods=['POST'])
+def admin_delete_user(username):
+    if not is_admin_logged_in():
+        return redirect('/admin/login')
+
+    supabase.table("results").delete().eq("username", username).execute()
+    supabase.table("users").delete().eq("username", username).execute()
+    return redirect('/admin/dashboard')
+
 # =========================
 # SIGNUP
 # =========================
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
+    error = None
+
     if request.method == 'POST':
+        username, username_error = validate_username(request.form.get('username'))
+        password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        password_error = validate_password(password)
+
+        if username_error or password_error:
+            error = username_error or password_error
+            return render_template("signup.html", error=error, username=username)
+
+        if password != confirm_password:
+            error = "Passwords do not match."
+            return render_template("signup.html", error=error, username=username)
+
+        existing = supabase.table("users") \
+            .select("username") \
+            .eq("username", username) \
+            .execute()
+
+        if existing.data:
+            error = "This username is already registered."
+            return render_template("signup.html", error=error, username=username)
+
         supabase.table("users").insert({
-            "username": request.form['username'],
-            "password": request.form['password']
+            "username": username,
+            "password": password
         }).execute()
 
         return redirect('/')
 
-    return render_template("signup.html")
+    return render_template("signup.html", error=error)
 
 # =========================
 # GOOGLE LOGIN
@@ -253,25 +395,43 @@ def dashboard():
     if 'user' not in session:
         return redirect('/')
 
+    form_error = None
+
     if request.method == 'POST':
-        subject = request.form['subject']
-        obtained = int(request.form['obtained'])
-        total = int(request.form['total'])
+        subject = (request.form.get('subject') or "").strip()
+        obtained_value = request.form.get('obtained', '')
+        total_value = request.form.get('total', '')
 
-        if total <= 0:
-            return redirect('/dashboard')
+        try:
+            obtained = int(obtained_value)
+            total = int(total_value)
+        except (TypeError, ValueError):
+            form_error = "Marks must be valid whole numbers."
+        else:
+            if not subject:
+                form_error = "Subject name is required."
+            elif len(subject) > 50:
+                form_error = "Subject name must be 50 characters or fewer."
+            elif total <= 0:
+                form_error = "Total marks must be greater than zero."
+            elif obtained < 0:
+                form_error = "Obtained marks cannot be negative."
+            elif obtained > total:
+                form_error = "Obtained marks cannot be greater than total marks."
+            else:
+                percentage = (obtained / total) * 100
+                grade = calculate_grade(percentage)
 
-        percentage = (obtained / total) * 100
-        grade = calculate_grade(percentage)
+                supabase.table("results").insert({
+                    "username": session['user'],
+                    "subject": subject,
+                    "obtained": obtained,
+                    "total": total,
+                    "percentage": round(percentage, 2),
+                    "grade": grade
+                }).execute()
 
-        supabase.table("results").insert({
-            "username": session['user'],
-            "subject": subject,
-            "obtained": obtained,
-            "total": total,
-            "percentage": round(percentage, 2),
-            "grade": grade
-        }).execute()
+                return redirect('/dashboard')
 
     data = supabase.table("results") \
         .select("*") \
@@ -283,7 +443,22 @@ def dashboard():
     return render_template("dashboard.html",
                            username=session['user'],
                            results=data.data,
-                           summary=summary)
+                           summary=summary,
+                           form_error=form_error)
+
+
+@app.route('/delete-result/<result_id>', methods=['POST'])
+def delete_result(result_id):
+    if 'user' not in session:
+        return redirect('/')
+
+    supabase.table("results") \
+        .delete() \
+        .eq("id", result_id) \
+        .eq("username", session['user']) \
+        .execute()
+
+    return redirect('/dashboard')
 
 # =========================
 # PDF EXPORT
