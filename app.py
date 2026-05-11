@@ -427,52 +427,437 @@ def delete_result(result_id):
 # =========================
 # PDF EXPORT
 # =========================
+# =========================
+# PDF EXPORT
+# =========================
 @app.route('/export-pdf')
 def export_pdf():
     if 'user' not in session:
         return redirect('/')
+
+    from datetime import datetime
 
     data = supabase.table("results") \
         .select("*") \
         .eq("username", session['user']) \
         .execute()
 
-    rows = ""
-    total = 0
+    results = data.data
+    total = sum(item['percentage'] for item in results)
+    avg = round(total / len(results), 2) if results else 0
+    grade = calculate_grade(avg)
+    now = datetime.now().strftime("%d %B %Y, %I:%M %p")
+    passed = sum(1 for r in results if r['percentage'] >= 40)
+    failed = len(results) - passed
 
-    for item in data.data:
-        total += item['percentage']
+    # Grade color
+    grade_colors = {
+        "A+": "#16a34a", "A": "#15803d",
+        "B": "#2563eb", "C": "#d97706", "Fail": "#dc2626"
+    }
+    grade_color = grade_colors.get(grade, "#333")
+
+    # Table rows
+    rows = ""
+    for item in results:
+        g = item['grade']
+        g_color = grade_colors.get(g, "#333")
+        bar_width = item['percentage']
         rows += f"""
         <tr>
             <td>{item['subject']}</td>
-            <td>{item['obtained']}/{item['total']}</td>
-            <td>{item['percentage']}%</td>
-            <td>{item['grade']}</td>
+            <td style="text-align:center;">{item['obtained']}/{item['total']}</td>
+            <td style="text-align:center;">{item['percentage']}%</td>
+            <td style="text-align:center;">
+                <span style="
+                    display:inline-block;
+                    padding:3px 12px;
+                    border-radius:999px;
+                    background:{g_color}22;
+                    color:{g_color};
+                    font-weight:800;
+                    font-size:12px;
+                ">{g}</span>
+            </td>
+            <td style="min-width:100px;">
+                <div style="background:#e2e8f0; border-radius:999px; height:8px; overflow:hidden;">
+                    <div style="width:{bar_width}%; height:100%; background:linear-gradient(90deg,#2563eb,#0f9f6e); border-radius:999px;"></div>
+                </div>
+            </td>
         </tr>
         """
 
-    avg = round(total / len(data.data), 2) if data.data else 0
-
     html = f"""
+    <!DOCTYPE html>
     <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+
+            body {{
+                font-family: 'Segoe UI', Arial, sans-serif;
+                background: #f6f8fb;
+                color: #0f172a;
+                padding: 0;
+            }}
+
+            /* HEADER */
+            .header {{
+                background: linear-gradient(135deg, #1e40af, #0f9f6e);
+                color: white;
+                padding: 36px 40px 28px;
+                position: relative;
+                overflow: hidden;
+            }}
+            .header::after {{
+                content: '';
+                position: absolute;
+                right: -40px;
+                top: -40px;
+                width: 200px;
+                height: 200px;
+                border-radius: 50%;
+                background: rgba(255,255,255,0.08);
+            }}
+            .header-top {{
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+            }}
+            .portal-name {{
+                font-size: 11px;
+                font-weight: 900;
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+                color: #bfdbfe;
+                margin-bottom: 8px;
+            }}
+            .header h1 {{
+                font-size: 28px;
+                font-weight: 900;
+                line-height: 1.1;
+            }}
+            .header .subtitle {{
+                font-size: 13px;
+                color: #dbeafe;
+                margin-top: 4px;
+            }}
+            .generated-on {{
+                text-align: right;
+                font-size: 11px;
+                color: #bfdbfe;
+                line-height: 1.6;
+            }}
+            .generated-on strong {{
+                display: block;
+                font-size: 13px;
+                color: white;
+            }}
+
+            /* STUDENT INFO BAR */
+            .info-bar {{
+                background: white;
+                border-bottom: 3px solid #e2e8f0;
+                padding: 16px 40px;
+                display: flex;
+                gap: 40px;
+                align-items: center;
+            }}
+            .info-item span {{
+                display: block;
+                font-size: 10px;
+                font-weight: 900;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                color: #64748b;
+                margin-bottom: 3px;
+            }}
+            .info-item strong {{
+                font-size: 14px;
+                color: #0f172a;
+            }}
+
+            /* MAIN CONTENT */
+            .content {{
+                padding: 28px 40px;
+            }}
+
+            /* SUMMARY CARDS */
+            .summary-grid {{
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 14px;
+                margin-bottom: 28px;
+            }}
+            .summary-card {{
+                background: white;
+                border-radius: 10px;
+                padding: 16px;
+                border: 1px solid #e2e8f0;
+                text-align: center;
+                box-shadow: 0 2px 8px rgba(15,23,42,0.06);
+            }}
+            .summary-card .label {{
+                font-size: 10px;
+                font-weight: 900;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                color: #64748b;
+                margin-bottom: 8px;
+            }}
+            .summary-card .value {{
+                font-size: 26px;
+                font-weight: 950;
+                line-height: 1;
+                color: #0f172a;
+            }}
+            .summary-card .sub {{
+                font-size: 11px;
+                color: #94a3b8;
+                margin-top: 4px;
+            }}
+
+            /* SECTION TITLE */
+            .section-title {{
+                font-size: 11px;
+                font-weight: 900;
+                text-transform: uppercase;
+                letter-spacing: 0.1em;
+                color: #2563eb;
+                margin-bottom: 12px;
+                padding-bottom: 6px;
+                border-bottom: 2px solid #dbeafe;
+            }}
+
+            /* TABLE */
+            table {{
+                width: 100%;
+                border-collapse: collapse;
+                background: white;
+                border-radius: 10px;
+                overflow: hidden;
+                box-shadow: 0 2px 8px rgba(15,23,42,0.06);
+                margin-bottom: 28px;
+            }}
+            thead tr {{
+                background: #1e40af;
+                color: white;
+            }}
+            thead th {{
+                padding: 12px 16px;
+                font-size: 11px;
+                font-weight: 900;
+                text-transform: uppercase;
+                letter-spacing: 0.07em;
+                text-align: left;
+            }}
+            tbody tr {{
+                border-bottom: 1px solid #f1f5f9;
+            }}
+            tbody tr:last-child {{
+                border-bottom: none;
+            }}
+            tbody tr:nth-child(even) {{
+                background: #f8fafc;
+            }}
+            tbody td {{
+                padding: 12px 16px;
+                font-size: 13px;
+            }}
+
+            /* AVERAGE ROW */
+            .average-row {{
+                background: #eff6ff !important;
+                border-top: 2px solid #2563eb !important;
+            }}
+            .average-row td {{
+                font-weight: 900;
+                color: #1e40af;
+                font-size: 14px !important;
+            }}
+
+            /* PERFORMANCE BAR */
+            .perf-section {{
+                background: white;
+                border-radius: 10px;
+                padding: 20px;
+                border: 1px solid #e2e8f0;
+                box-shadow: 0 2px 8px rgba(15,23,42,0.06);
+                margin-bottom: 28px;
+            }}
+            .perf-row {{
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 10px;
+            }}
+            .perf-row:last-child {{ margin-bottom: 0; }}
+            .perf-subject {{
+                width: 100px;
+                font-size: 12px;
+                font-weight: 700;
+                color: #334155;
+                flex-shrink: 0;
+            }}
+            .perf-bar-wrap {{
+                flex: 1;
+                background: #e2e8f0;
+                border-radius: 999px;
+                height: 10px;
+                overflow: hidden;
+            }}
+            .perf-bar {{
+                height: 100%;
+                border-radius: 999px;
+                background: linear-gradient(90deg, #2563eb, #0f9f6e);
+            }}
+            .perf-pct {{
+                width: 44px;
+                font-size: 12px;
+                font-weight: 900;
+                color: #0f172a;
+                text-align: right;
+                flex-shrink: 0;
+            }}
+
+            /* FOOTER */
+            .footer {{
+                background: #0f172a;
+                color: #94a3b8;
+                padding: 16px 40px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 11px;
+            }}
+            .footer strong {{ color: white; }}
+        </style>
+    </head>
     <body>
-        <h2>Student Result Report</h2>
-        <p>User: {session['user']}</p>
-        <table border="1">
-            {rows}
-        </table>
-        <h3>Average: {avg}%</h3>
+
+        <!-- HEADER -->
+        <div class="header">
+            <div class="header-top">
+                <div>
+                    <p class="portal-name">🎓 Student Result Portal</p>
+                    <h1>Academic Result Report</h1>
+                    <p class="subtitle">Official performance summary for the current session</p>
+                </div>
+                <div class="generated-on">
+                    <strong>Generated on</strong>
+                    {now}
+                </div>
+            </div>
+        </div>
+
+        <!-- STUDENT INFO BAR -->
+        <div class="info-bar">
+            <div class="info-item">
+                <span>Student Name</span>
+                <strong>{session['user']}</strong>
+            </div>
+            <div class="info-item">
+                <span>Total Subjects</span>
+                <strong>{len(results)}</strong>
+            </div>
+            <div class="info-item">
+                <span>Subjects Passed</span>
+                <strong style="color:#16a34a;">{passed}</strong>
+            </div>
+            <div class="info-item">
+                <span>Needs Improvement</span>
+                <strong style="color:#dc2626;">{failed}</strong>
+            </div>
+            <div class="info-item">
+                <span>Export Date</span>
+                <strong>{datetime.now().strftime("%d/%m/%Y")}</strong>
+            </div>
+        </div>
+
+        <div class="content">
+
+            <!-- SUMMARY CARDS -->
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <div class="label">Overall Average</div>
+                    <div class="value">{avg}%</div>
+                    <div class="sub">across all subjects</div>
+                </div>
+                <div class="summary-card">
+                    <div class="label">Final Grade</div>
+                    <div class="value" style="color:{grade_color};">{grade}</div>
+                    <div class="sub">overall performance</div>
+                </div>
+                <div class="summary-card">
+                    <div class="label">Subjects Passed</div>
+                    <div class="value" style="color:#16a34a;">{passed}</div>
+                    <div class="sub">out of {len(results)}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="label">Total Marks</div>
+                    <div class="value">{sum(r['obtained'] for r in results)}</div>
+                    <div class="sub">out of {sum(r['total'] for r in results)}</div>
+                </div>
+            </div>
+
+            <!-- RESULTS TABLE -->
+            <p class="section-title">📋 Subject-wise Results</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th style="text-align:center;">Marks</th>
+                        <th style="text-align:center;">Percentage</th>
+                        <th style="text-align:center;">Grade</th>
+                        <th>Progress</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows}
+                    <tr class="average-row">
+                        <td>📊 Overall Average</td>
+                        <td style="text-align:center;">—</td>
+                        <td style="text-align:center;">{avg}%</td>
+                        <td style="text-align:center;">{grade}</td>
+                        <td>—</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- PERFORMANCE BARS -->
+            <p class="section-title">📈 Performance Overview</p>
+            <div class="perf-section">
+                {"".join(f'''
+                <div class="perf-row">
+                    <div class="perf-subject">{r['subject']}</div>
+                    <div class="perf-bar-wrap">
+                        <div class="perf-bar" style="width:{r['percentage']}%;"></div>
+                    </div>
+                    <div class="perf-pct">{r['percentage']}%</div>
+                </div>
+                ''' for r in results)}
+            </div>
+
+        </div>
+
+        <!-- FOOTER -->
+        <div class="footer">
+            <span>🎓 <strong>Student Result Portal</strong> — Confidential Academic Document</span>
+            <span>Generated: {now}</span>
+        </div>
+
     </body>
     </html>
     """
 
     pdf = HTML(string=html).write_pdf()
-
     response = make_response(pdf)
     response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = f'attachment; filename={session["user"]}.pdf'
-
+    response.headers['Content-Disposition'] = f'attachment; filename={session["user"]}_report.pdf'
     return response
+
+  
 
 # =========================
 # LOGOUT
