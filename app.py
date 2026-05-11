@@ -173,43 +173,7 @@ def admin_delete_user(username):
     return redirect('/admin/dashboard')
 
 # =========================
-# SIGNUP
-# =========================
-@app.route('/signup', methods=['GET', 'POST'])
-def signup():
-    error = None
 
-    if request.method == 'POST':
-        username, username_error = validate_username(request.form.get('username'))
-        password = request.form.get('password', '')
-        confirm_password = request.form.get('confirm_password', '')
-        password_error = validate_password(password)
-
-        if username_error or password_error:
-            error = username_error or password_error
-            return render_template("signup.html", error=error, username=username)
-
-        if password != confirm_password:
-            error = "Passwords do not match."
-            return render_template("signup.html", error=error, username=username)
-
-        existing = supabase.table("users") \
-            .select("username") \
-            .eq("username", username) \
-            .execute()
-
-        if existing.data:
-            error = "This username is already registered."
-            return render_template("signup.html", error=error, username=username)
-
-        supabase.table("users").insert({
-            "username": username,
-            "password": password
-        }).execute()
-
-        return redirect('/')
-
-    return render_template("signup.html", error=error)
 
 # =========================
 # GOOGLE LOGIN
