@@ -188,4 +188,87 @@
     `;
     document.head.appendChild(style);
 
+    // =====================
+    // 10. BACKGROUND ANIMATION
+    // =====================
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText = `
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.45;
+    `;
+    document.body.prepend(canvas);
+
+    document.body.style.position = "relative";
+    document.querySelectorAll("body > *:not(canvas)").forEach(el => {
+        el.style.position = "relative";
+        el.style.zIndex = "1";
+    });
+
+    const ctx2 = canvas.getContext("2d");
+
+    function resizeCanvas() {
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas, { passive: true });
+
+    const orbs = Array.from({ length: 12 }, () => ({
+        x:     Math.random() * window.innerWidth,
+        y:     Math.random() * window.innerHeight,
+        r:     60 + Math.random() * 120,
+        dx:    (Math.random() - 0.5) * 0.4,
+        dy:    (Math.random() - 0.5) * 0.4,
+        color: Math.random() > 0.5 ? "37,99,235" : "15,159,110",
+        alpha: 0.04 + Math.random() * 0.08
+    }));
+
+    function drawOrbs() {
+        ctx2.clearRect(0, 0, canvas.width, canvas.height);
+
+        orbs.forEach(orb => {
+            orb.x += orb.dx;
+            orb.y += orb.dy;
+
+            if (orb.x < -orb.r) orb.x = canvas.width + orb.r;
+            if (orb.x > canvas.width + orb.r) orb.x = -orb.r;
+            if (orb.y < -orb.r) orb.y = canvas.height + orb.r;
+            if (orb.y > canvas.height + orb.r) orb.y = -orb.r;
+
+            const grad = ctx2.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, orb.r);
+            grad.addColorStop(0, `rgba(${orb.color}, ${orb.alpha})`);
+            grad.addColorStop(1, `rgba(${orb.color}, 0)`);
+
+            ctx2.beginPath();
+            ctx2.arc(orb.x, orb.y, orb.r, 0, Math.PI * 2);
+            ctx2.fillStyle = grad;
+            ctx2.fill();
+        });
+
+        requestAnimationFrame(drawOrbs);
+    }
+
+    drawOrbs();
+
+    window.addEventListener("mousemove", (e) => {
+        orbs.forEach(orb => {
+            const dx = e.clientX - orb.x;
+            const dy = e.clientY - orb.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 300) {
+                orb.dx += dx * 0.00008;
+                orb.dy += dy * 0.00008;
+                const speed = Math.sqrt(orb.dx * orb.dx + orb.dy * orb.dy);
+                if (speed > 1.2) {
+                    orb.dx = (orb.dx / speed) * 1.2;
+                    orb.dy = (orb.dy / speed) * 1.2;
+                }
+            }
+        });
+    }, { passive: true });
+
 })();

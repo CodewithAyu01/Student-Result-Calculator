@@ -114,7 +114,7 @@ def admin_login():
     return render_template("admin_login.html", error=error)
 
 
-@app.route('/admin/dashboard')
+@app.route('/admin/dashboard', methods=['GET', 'POST'])
 def admin_dashboard():
     if not is_admin_logged_in():
         return redirect('/admin/login')
@@ -183,7 +183,7 @@ def login_google():
     res = supabase.auth.sign_in_with_oauth({
         "provider": "google",
         "options": {
-            "redirect_to": "http://127.0.0.1:5000/oauth/callback"
+           "redirect_to": "https://student-result-calculator-g7r0.onrender.com/oauth/callback"
         }
     })
     return redirect(res.url)
@@ -196,7 +196,7 @@ def login_github():
     res = supabase.auth.sign_in_with_oauth({
         "provider": "github",
         "options": {
-            "redirect_to": "http://127.0.0.1:5000/oauth/callback"
+            "redirect_to": "https://student-result-calculator-g7r0.onrender.com/oauth/callback"
         }
     })
     return redirect(res.url)
