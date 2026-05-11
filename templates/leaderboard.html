@@ -6,9 +6,78 @@
     <title>Leaderboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Podium cards stagger */
+        .podium-card:nth-child(1) { animation: riseIn 0.5s 0.1s ease both; }
+        .podium-card:nth-child(2) { animation: riseIn 0.5s 0.2s ease both; }
+        .podium-card:nth-child(3) { animation: riseIn 0.5s 0.3s ease both; }
+
+        /* Table rows stagger */
+        tbody tr {
+            opacity: 0;
+            animation: rowIn 0.4s ease both;
+        }
+        tbody tr:nth-child(1)  { animation-delay: 0.05s; }
+        tbody tr:nth-child(2)  { animation-delay: 0.10s; }
+        tbody tr:nth-child(3)  { animation-delay: 0.15s; }
+        tbody tr:nth-child(4)  { animation-delay: 0.20s; }
+        tbody tr:nth-child(5)  { animation-delay: 0.25s; }
+        tbody tr:nth-child(6)  { animation-delay: 0.30s; }
+        tbody tr:nth-child(7)  { animation-delay: 0.35s; }
+        tbody tr:nth-child(8)  { animation-delay: 0.40s; }
+        tbody tr:nth-child(9)  { animation-delay: 0.45s; }
+        tbody tr:nth-child(10) { animation-delay: 0.50s; }
+
+        /* Rank badge */
+        .rank-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-weight: 900;
+            font-size: 0.85rem;
+        }
+        .rank-1 { background: #fef3c7; color: #92400e; }
+        .rank-2 { background: #f1f5f9; color: #334155; }
+        .rank-3 { background: #fef2f2; color: #991b1b; }
+        .rank-other { background: #eff6ff; color: #1d4ed8; }
+
+        /* Nav animation */
+        .dashboard-nav { animation: riseIn 0.45s ease both; }
+        .leaderboard-hero { animation: riseIn 0.5s 0.08s ease both; }
+        .table-panel { animation: riseIn 0.5s 0.16s ease both; }
+
+        /* Highlight current user row */
+        .highlight-row {
+            background: #eff6ff !important;
+            border-left: 3px solid var(--blue);
+        }
+        .highlight-row:hover {
+            background: #dbeafe !important;
+        }
+
+        /* Progress bar animation */
+        .progress-track span {
+            animation: fillTrack 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        tbody tr:nth-child(1) .progress-track span { animation-delay: 0.05s; }
+        tbody tr:nth-child(2) .progress-track span { animation-delay: 0.10s; }
+        tbody tr:nth-child(3) .progress-track span { animation-delay: 0.15s; }
+        tbody tr:nth-child(4) .progress-track span { animation-delay: 0.20s; }
+        tbody tr:nth-child(5) .progress-track span { animation-delay: 0.25s; }
+
+        /* Podium emoji for top 3 */
+        .medal-1::before { content: "🥇 "; }
+        .medal-2::before { content: "🥈 "; }
+        .medal-3::before { content: "🥉 "; }
+    </style>
 </head>
 <body class="dashboard-page">
     <main class="dashboard-shell">
+
+        <!-- NAVBAR -->
         <nav class="dashboard-nav">
             <div>
                 <p class="eyebrow">Class performance</p>
@@ -26,6 +95,7 @@
             </div>
         </nav>
 
+        <!-- TOP 3 PODIUM -->
         <section class="leaderboard-hero">
             <div>
                 <p class="eyebrow">Top averages</p>
@@ -33,17 +103,22 @@
             </div>
             <div class="leaderboard-podium" aria-label="Top three students">
                 {% for entry in leaderboard[:3] %}
-                    <div class="podium-card rank-card-{{ entry.rank }}">
-                        <span>#{{ entry.rank }}</span>
-                        <strong>{{ entry.username }}</strong>
-                        <small data-count="{{ entry.average }}" data-suffix="%">{{ entry.average }}%</small>
-                    </div>
+                <div class="podium-card rank-card-{{ entry.rank }}">
+                    <span class="medal-{{ entry.rank }}">#{{ entry.rank }}</span>
+                    <strong>{{ entry.username }}</strong>
+                    <small
+                        data-count="{{ entry.average }}"
+                        data-suffix="%">
+                        {{ entry.average }}%
+                    </small>
+                </div>
                 {% else %}
-                    <div class="empty-state small">No saved results yet.</div>
+                <div class="empty-state small">No saved results yet.</div>
                 {% endfor %}
             </div>
         </section>
 
+        <!-- FULL TABLE -->
         <section class="table-panel animated-panel">
             <div class="panel-heading compact">
                 <div>
@@ -66,16 +141,26 @@
                     <tbody>
                         {% for entry in leaderboard %}
                         <tr class="{% if entry.is_current %}highlight-row{% endif %}">
-                            <td><strong>#{{ entry.rank }}</strong></td>
                             <td>
-                                {{ entry.username }}
+                                <span class="rank-badge rank-{% if entry.rank <= 3 %}{{ entry.rank }}{% else %}other{% endif %}">
+                                    {{ entry.rank }}
+                                </span>
+                            </td>
+                            <td>
+                                <strong>{{ entry.username }}</strong>
                                 {% if entry.is_current %}
                                     <span class="you-badge">You</span>
                                 {% endif %}
                             </td>
                             <td>{{ entry.subjects }}</td>
-                            <td><strong>{{ entry.average }}%</strong></td>
                             <td>
+                                <strong
+                                    data-count="{{ entry.average }}"
+                                    data-suffix="%">
+                                    {{ entry.average }}%
+                                </strong>
+                            </td>
+                            <td style="min-width: 120px;">
                                 <div class="progress-track" aria-label="{{ entry.average }} percent average">
                                     <span style="width: {{ entry.average }}%;"></span>
                                 </div>
@@ -83,13 +168,16 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="5">No leaderboard data yet.</td>
+                            <td colspan="5" style="text-align:center; color:#888; padding:30px;">
+                                No leaderboard data yet.
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
         </section>
+
     </main>
 
     <script src="{{ url_for('static', filename='motion.js') }}"></script>

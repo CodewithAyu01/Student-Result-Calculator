@@ -6,6 +6,44 @@
     <title>Admin Login</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .auth-hero { animation: riseIn 0.55s ease both; }
+        .auth-card { animation: riseIn 0.55s 0.1s ease both; }
+
+        .smart-form label {
+            opacity: 0;
+            animation: riseIn 0.4s ease both;
+        }
+        .smart-form label:nth-child(1) { animation-delay: 0.18s; }
+        .smart-form label:nth-child(2) { animation-delay: 0.26s; }
+
+        .primary-action {
+            opacity: 0;
+            animation: riseIn 0.4s 0.34s ease both;
+        }
+
+        .auth-feature-grid div {
+            opacity: 0;
+            animation: riseIn 0.4s ease both;
+        }
+        .auth-feature-grid div:nth-child(1) { animation-delay: 0.2s; }
+        .auth-feature-grid div:nth-child(2) { animation-delay: 0.3s; }
+        .auth-feature-grid div:nth-child(3) { animation-delay: 0.4s; }
+
+        .auth-icon {
+            animation: riseIn 0.4s 0.15s ease both;
+        }
+
+        .bottom-link {
+            opacity: 0;
+            animation: riseIn 0.4s 0.42s ease both;
+        }
+
+        /* Shield pulse on load */
+        .auth-icon i {
+            animation: iconFloat 3s ease-in-out infinite;
+        }
+    </style>
 </head>
 <body class="auth-page admin-auth-page">
     <main class="auth-shell">

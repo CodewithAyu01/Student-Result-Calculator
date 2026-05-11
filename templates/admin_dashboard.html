@@ -3,216 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
+    <title>Admin Login</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .auth-hero { animation: riseIn 0.55s ease both; }
+        .auth-card { animation: riseIn 0.55s 0.1s ease both; }
+
+        .smart-form label {
+            opacity: 0;
+            animation: riseIn 0.4s ease both;
+        }
+        .smart-form label:nth-child(1) { animation-delay: 0.18s; }
+        .smart-form label:nth-child(2) { animation-delay: 0.26s; }
+
+        .primary-action {
+            opacity: 0;
+            animation: riseIn 0.4s 0.34s ease both;
+        }
+
+        .auth-feature-grid div {
+            opacity: 0;
+            animation: riseIn 0.4s ease both;
+        }
+        .auth-feature-grid div:nth-child(1) { animation-delay: 0.2s; }
+        .auth-feature-grid div:nth-child(2) { animation-delay: 0.3s; }
+        .auth-feature-grid div:nth-child(3) { animation-delay: 0.4s; }
+
+        .auth-icon {
+            animation: riseIn 0.4s 0.15s ease both;
+        }
+
+        .bottom-link {
+            opacity: 0;
+            animation: riseIn 0.4s 0.42s ease both;
+        }
+
+        /* Shield pulse on load */
+        .auth-icon i {
+            animation: iconFloat 3s ease-in-out infinite;
+        }
+    </style>
 </head>
-<body class="dashboard-page admin-page">
-    <main class="dashboard-shell">
-        <nav class="dashboard-nav admin-dashboard-nav">
-            <div>
-                <p class="eyebrow">Admin command center</p>
-                <h1>Student Portal Admin</h1>
-            </div>
-            <div class="nav-actions">
-                <a href="/dashboard" class="nav-link">
-                    <i data-lucide="layout-dashboard"></i>
-                    Student View
-                </a>
-                <a href="/logout" class="nav-link danger">
-                    <i data-lucide="log-out"></i>
-                    Logout
-                </a>
-            </div>
-        </nav>
-
-        <section class="admin-hero-panel">
-            <div>
-                <p class="eyebrow">Overview</p>
-                <h2>Monitor records, spot performance trends, and remove incorrect data quickly.</h2>
-            </div>
-            <div class="admin-health-grid">
-                <div>
-                    <span data-count="{{ student_summaries|length }}">{{ student_summaries|length }}</span>
-                    <small>Students with results</small>
-                </div>
-                <div>
-                    <span data-count="{{ total_results }}">{{ total_results }}</span>
-                    <small>Total records</small>
-                </div>
+<body class="auth-page admin-auth-page">
+    <main class="auth-shell">
+        <section class="auth-hero admin-hero">
+            <p class="eyebrow">Admin control</p>
+            <h1>Review students, manage results, and keep records clean.</h1>
+            <div class="auth-feature-grid" aria-label="Admin highlights">
+                <div><strong>Users</strong><span>Student records</span></div>
+                <div><strong>Marks</strong><span>Result audit</span></div>
+                <div><strong>Safe</strong><span>Protected access</span></div>
             </div>
         </section>
 
-        <section class="admin-stat-grid">
-            <article class="stat-card">
-                <span class="stat-icon"><i data-lucide="users"></i></span>
+        <section class="auth-card" aria-labelledby="admin-login-title">
+            <div class="auth-card-header">
                 <div>
-                    <h2 data-count="{{ total_students }}">{{ total_students }}</h2>
-                    <p>Total students</p>
+                    <p class="eyebrow">Restricted area</p>
+                    <h2 id="admin-login-title">Admin Login</h2>
                 </div>
-            </article>
-            <article class="stat-card">
-                <span class="stat-icon"><i data-lucide="clipboard-list"></i></span>
-                <div>
-                    <h2 data-count="{{ total_results }}">{{ total_results }}</h2>
-                    <p>Total results</p>
-                </div>
-            </article>
-            <article class="stat-card">
-                <span class="stat-icon"><i data-lucide="mail"></i></span>
-                <div>
-                    <h2 data-count="{{ contacts|length }}">{{ contacts|length }}</h2>
-                    <p>Messages</p>
-                </div>
-            </article>
-        </section>
-
-        <section class="table-panel admin-section">
-            <div class="panel-heading compact">
-                <div>
-                    <p class="eyebrow">Performance ranking</p>
-                    <h2>Student Performance</h2>
-                </div>
-                <span class="record-count">{{ student_summaries|length }} students</span>
+                <span class="auth-icon"><i data-lucide="shield-check"></i></span>
             </div>
 
-            {% if student_summaries %}
-            <div class="table-wrap">
-                <table class="results-table admin-table">
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Student</th>
-                            <th>Subjects</th>
-                            <th>Average</th>
-                            <th>Grade</th>
-                            <th>Progress</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for s in student_summaries %}
-                        <tr>
-                            <td><strong>#{{ loop.index }}</strong></td>
-                            <td><strong>{{ s.username }}</strong></td>
-                            <td>{{ s.subjects }}</td>
-                            <td><strong>{{ s.average }}%</strong></td>
-                            <td><span class="grade-pill grade-{{ s.grade|replace('+', 'plus') }}">{{ s.grade }}</span></td>
-                            <td>
-                                <div class="progress-track" aria-label="{{ s.average }} percent average">
-                                    <span style="width: {{ s.average }}%;"></span>
-                                </div>
-                            </td>
-                            <td>
-                                <form method="POST" action="/admin/delete-user/{{ s.username }}" class="inline-form" data-confirm="Delete {{ s.username }} and all their results?">
-                                    <button type="submit" class="icon-action danger" aria-label="Delete {{ s.username }}">
-                                        <i data-lucide="user-x"></i>
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-                <div class="empty-state small">No student results yet.</div>
-            {% endif %}
-        </section>
+            <form method="POST" class="smart-form" novalidate>
+                <label>
+                    Username
+                    <input
+                        type="text"
+                        name="username"
+                        autocomplete="username"
+                        minlength="3"
+                        maxlength="50"
+                        required
+                    >
+                    <small class="field-error">Admin username is required.</small>
+                </label>
 
-        <section class="table-panel admin-section">
-            <div class="panel-heading compact">
-                <div>
-                    <p class="eyebrow">Result audit</p>
-                    <h2>All Results</h2>
-                </div>
-                <span class="record-count">{{ results|length }} records</span>
-            </div>
+                <label>
+                    Password
+                    <span class="password-field">
+                        <input
+                            id="adminPassword"
+                            type="password"
+                            name="password"
+                            autocomplete="current-password"
+                            minlength="6"
+                            required
+                        >
+                        <button type="button" class="mini-icon-btn" data-toggle-password="adminPassword" aria-label="Show password">
+                            <i data-lucide="eye"></i>
+                        </button>
+                    </span>
+                    <small class="field-error">Password must be at least 6 characters.</small>
+                </label>
 
-            {% if results %}
-            <div class="table-wrap">
-                <table class="results-table admin-table">
-                    <thead>
-                        <tr>
-                            <th>Student</th>
-                            <th>Subject</th>
-                            <th>Marks</th>
-                            <th>Percentage</th>
-                            <th>Grade</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for r in results %}
-                        <tr>
-                            <td><strong>{{ r.username }}</strong></td>
-                            <td>{{ r.subject }}</td>
-                            <td>{{ r.obtained }}/{{ r.total }}</td>
-                            <td>{{ r.percentage }}%</td>
-                            <td><span class="grade-pill grade-{{ r.grade|replace('+', 'plus') }}">{{ r.grade }}</span></td>
-                            <td>
-                                {% if r.id %}
-                                <form method="POST" action="/admin/delete-result/{{ r.id }}" class="inline-form" data-confirm="Delete this result?">
-                                    <button type="submit" class="icon-action danger" aria-label="Delete {{ r.subject }} result">
-                                        <i data-lucide="trash-2"></i>
-                                    </button>
-                                </form>
-                                {% else %}
-                                    <span class="muted-text">Locked</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-                <div class="empty-state small">No results found.</div>
-            {% endif %}
-        </section>
+                {% if error %}
+                    <p class="form-alert">{{ error }}</p>
+                {% endif %}
 
-        <section class="table-panel admin-section">
-            <div class="panel-heading compact">
-                <div>
-                    <p class="eyebrow">Inbox</p>
-                    <h2>Contact Messages</h2>
-                </div>
-                <span class="record-count">{{ contacts|length }} messages</span>
-            </div>
+                <button type="submit" class="primary-action full-width">
+                    <i data-lucide="lock-keyhole"></i>
+                    Login as Admin
+                </button>
+            </form>
 
-            {% if contacts %}
-            <div class="table-wrap">
-                <table class="results-table admin-table message-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Message</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for c in contacts %}
-                        <tr>
-                            <td><strong>{{ c.name }}</strong></td>
-                            <td><a href="mailto:{{ c.email }}" class="email-link">{{ c.email }}</a></td>
-                            <td class="message-cell">{{ c.message }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-                <div class="empty-state small">No messages yet.</div>
-            {% endif %}
+            <p class="bottom-link">
+                Student area
+                <a href="/">Back to login</a>
+            </p>
         </section>
     </main>
 
     <script src="{{ url_for('static', filename='motion.js') }}"></script>
     <script>
-        document.querySelectorAll("[data-confirm]").forEach((form) => {
+        document.querySelectorAll("[data-toggle-password]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const input = document.getElementById(button.dataset.togglePassword);
+                const isHidden = input.type === "password";
+                input.type = isHidden ? "text" : "password";
+                button.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
+                button.innerHTML = isHidden ? '<i data-lucide="eye-off"></i>' : '<i data-lucide="eye"></i>';
+                window.lucide?.createIcons();
+            });
+        });
+
+        document.querySelectorAll(".smart-form").forEach((form) => {
             form.addEventListener("submit", (event) => {
-                if (!window.confirm(form.dataset.confirm)) {
+                if (!form.checkValidity()) {
                     event.preventDefault();
+                    form.classList.add("was-validated");
                 }
             });
         });

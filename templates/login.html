@@ -6,6 +6,64 @@
     <title>Student Portal Login</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .auth-hero { animation: riseIn 0.55s ease both; }
+        .auth-card { animation: riseIn 0.55s 0.1s ease both; }
+
+        .smart-form label {
+            opacity: 0;
+            animation: riseIn 0.4s ease both;
+        }
+        .smart-form label:nth-child(1) { animation-delay: 0.18s; }
+        .smart-form label:nth-child(2) { animation-delay: 0.26s; }
+
+        .primary-action {
+            opacity: 0;
+            animation: riseIn 0.4s 0.34s ease both;
+        }
+
+        .oauth-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px;
+            border-radius: var(--radius);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+            opacity: 0;
+            animation: riseIn 0.4s ease both;
+        }
+        .oauth-btn:nth-child(1) { animation-delay: 0.44s; }
+        .oauth-btn:nth-child(2) { animation-delay: 0.52s; }
+        .oauth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        }
+        .oauth-google { border: 1.5px solid #ddd; background: white; color: #333; }
+        .oauth-github { background: #24292e; color: white; }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+            opacity: 0;
+            animation: riseIn 0.4s 0.4s ease both;
+        }
+        .divider hr { flex: 1; border: none; border-top: 1px solid #ddd; }
+        .divider span { color: #888; font-size: 13px; }
+
+        .auth-feature-grid div {
+            opacity: 0;
+            animation: riseIn 0.4s ease both;
+        }
+        .auth-feature-grid div:nth-child(1) { animation-delay: 0.2s; }
+        .auth-feature-grid div:nth-child(2) { animation-delay: 0.3s; }
+        .auth-feature-grid div:nth-child(3) { animation-delay: 0.4s; }
+    </style>
 </head>
 <body class="auth-page">
     <main class="auth-shell">
@@ -72,31 +130,12 @@
                 </button>
             </form>
 
-            <!-- DIVIDER -->
-            <div style="display:flex; align-items:center; gap:10px; margin: 20px 0;">
-                <hr style="flex:1; border:none; border-top:1px solid #ddd;">
-                <span style="color:#888; font-size:13px;">or continue with</span>
-                <hr style="flex:1; border:none; border-top:1px solid #ddd;">
+            <div class="divider">
+                <hr><span>or continue with</span><hr>
             </div>
 
-            <!-- GOOGLE + GITHUB BUTTONS -->
             <div style="display:flex; flex-direction:column; gap:10px;">
-
-                <a href="/login/google" style="
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 10px;
-                    padding: 12px;
-                    border: 1.5px solid #ddd;
-                    border-radius: 10px;
-                    text-decoration: none;
-                    color: #333;
-                    font-weight: 600;
-                    font-size: 15px;
-                    background: white;
-                    transition: background 0.2s;
-                " onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
+                <a href="/login/google" class="oauth-btn oauth-google">
                     <svg width="20" height="20" viewBox="0 0 48 48">
                         <path fill="#EA4335" d="M24 9.5c3.1 0 5.9 1.1 8.1 2.9l6-6C34.5 3.1 29.5 1 24 1 14.8 1 7 6.7 3.7 14.6l7 5.4C12.4 13.6 17.7 9.5 24 9.5z"/>
                         <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 6.9-10 6.9-17z"/>
@@ -106,26 +145,12 @@
                     Continue with Google
                 </a>
 
-                <a href="/login/github" style="
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 10px;
-                    padding: 12px;
-                    border-radius: 10px;
-                    text-decoration: none;
-                    color: white;
-                    font-weight: 600;
-                    font-size: 15px;
-                    background: #24292e;
-                    transition: background 0.2s;
-                " onmouseover="this.style.background='#444d56'" onmouseout="this.style.background='#24292e'">
+                <a href="/login/github" class="oauth-btn oauth-github">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
                         <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.38.6.1.82-.26.82-.58v-2.02c-3.34.72-4.04-1.6-4.04-1.6-.54-1.38-1.33-1.74-1.33-1.74-1.08-.74.08-.72.08-.72 1.2.08 1.83 1.23 1.83 1.23 1.06 1.82 2.8 1.3 3.48.99.1-.77.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.23-3.22-.12-.3-.53-1.52.12-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02 0 2.04.13 3 .4 2.28-1.55 3.28-1.23 3.28-1.23.66 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.63-5.48 5.92.43.37.82 1.1.82 2.22v3.29c0 .32.22.7.83.58C20.56 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/>
                     </svg>
                     Continue with GitHub
                 </a>
-
             </div>
 
         </section>
